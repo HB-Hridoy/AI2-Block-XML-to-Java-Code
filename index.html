@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI2 XML to JSON Converter (Fixed)</title>
     <!-- Link to external CSS file -->
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <!-- Main container to hold the content -->
@@ -14,139 +14,7 @@
         <h1>AI2 XML to JSON Converter (Fixed)</h1>
         <!-- Textarea for user to input XML -->
         <textarea id="xmlInput" placeholder="Paste your AI2 XML here...">
-            <xml
-    xmlns="http://www.w3.org/1999/xhtml">
-    <block type="procedures_defnoreturn">
-        <field name="NAME">EEU_SettingsLanguage</field>
-        <statement name="STACK">
-            <block type="component_method">
-                <mutation component_type="AdvancedDecoration" method_name="SetMargin" is_generic="false" instance_name="SC_AD"></mutation>
-                <field name="COMPONENT_SELECTOR">SC_AD</field>
-                <value name="ARG0">
-                    <block type="component_component_block">
-                        <mutation component_type="VerticalScrollArrangement" instance_name="SettingsLanguage"></mutation>
-                        <field name="COMPONENT_SELECTOR">SettingsLanguage</field>
-                    </block>
-                </value>
-                <value name="ARG1">
-                    <block type="text">
-                        <field name="TEXT">10</field>
-                    </block>
-                </value>
-                <next>
-                    <block type="component_set_get">
-                        <mutation component_type="Label" set_or_get="set" property_name="TextColor" is_generic="false" instance_name="S_L_EnglishSelect"></mutation>
-                        <field name="COMPONENT_SELECTOR">S_L_EnglishSelect</field>
-                        <field name="PROP">TextColor</field>
-                        <value name="VALUE">
-                            <block type="component_set_get">
-                                <mutation component_type="ThMLT" set_or_get="get" property_name="ColorAccent" is_generic="false" instance_name="ThMLT1"></mutation>
-                                <field name="COMPONENT_SELECTOR">ThMLT1</field>
-                                <field name="PROP">ColorAccent</field>
-                            </block>
-                        </value>
-                        <next>
-                            <block type="component_set_get">
-                                <mutation component_type="Label" set_or_get="set" property_name="TextColor" is_generic="false" instance_name="S_L_BanglaSelect"></mutation>
-                                <field name="COMPONENT_SELECTOR">S_L_BanglaSelect</field>
-                                <field name="PROP">TextColor</field>
-                                <value name="VALUE">
-                                    <block type="component_set_get">
-                                        <mutation component_type="ThMLT" set_or_get="get" property_name="ColorAccent" is_generic="false" instance_name="ThMLT1"></mutation>
-                                        <field name="COMPONENT_SELECTOR">ThMLT1</field>
-                                        <field name="PROP">ColorAccent</field>
-                                    </block>
-                                </value>
-                                <next>
-                                    <block type="component_set_get">
-                                        <mutation component_type="Label" set_or_get="set" property_name="TextColor" is_generic="false" instance_name="S_L_BD_Select"></mutation>
-                                        <field name="COMPONENT_SELECTOR">S_L_BD_Select</field>
-                                        <field name="PROP">TextColor</field>
-                                        <value name="VALUE">
-                                            <block type="component_set_get">
-                                                <mutation component_type="ThMLT" set_or_get="get" property_name="ColorAccent" is_generic="false" instance_name="ThMLT1"></mutation>
-                                                <field name="COMPONENT_SELECTOR">ThMLT1</field>
-                                                <field name="PROP">ColorAccent</field>
-                                            </block>
-                                        </value>
-                                        <next>
-                                            <block type="component_method">
-                                                <mutation component_type="AdvancedDecoration" method_name="SetMargin" is_generic="false" instance_name="SC_AD"></mutation>
-                                                <field name="COMPONENT_SELECTOR">SC_AD</field>
-                                                <value name="ARG0">
-                                                    <block type="component_component_block">
-                                                        <mutation component_type="HorizontalArrangement" instance_name="S_L_English"></mutation>
-                                                        <field name="COMPONENT_SELECTOR">S_L_English</field>
-                                                    </block>
-                                                </value>
-                                                <value name="ARG1">
-                                                    <block type="text">
-                                                        <field name="TEXT">0,10,0,0</field>
-                                                    </block>
-                                                </value>
-                                                <next>
-                                                    <block type="component_method">
-                                                        <mutation component_type="AdvancedDecoration" method_name="SetMargin" is_generic="false" instance_name="SC_AD"></mutation>
-                                                        <field name="COMPONENT_SELECTOR">SC_AD</field>
-                                                        <value name="ARG0">
-                                                            <block type="component_component_block">
-                                                                <mutation component_type="HorizontalArrangement" instance_name="S_L_Bangla"></mutation>
-                                                                <field name="COMPONENT_SELECTOR">S_L_Bangla</field>
-                                                            </block>
-                                                        </value>
-                                                        <value name="ARG1">
-                                                            <block type="text">
-                                                                <field name="TEXT">0,10,0,0</field>
-                                                            </block>
-                                                        </value>
-                                                        <next>
-                                                            <block type="component_method">
-                                                                <mutation component_type="AdvancedDecoration" method_name="SetMargin" is_generic="false" instance_name="SC_AD"></mutation>
-                                                                <field name="COMPONENT_SELECTOR">SC_AD</field>
-                                                                <value name="ARG0">
-                                                                    <block type="component_component_block">
-                                                                        <mutation component_type="Label" instance_name="S_L_RegionBD"></mutation>
-                                                                        <field name="COMPONENT_SELECTOR">S_L_RegionBD</field>
-                                                                    </block>
-                                                                </value>
-                                                                <value name="ARG1">
-                                                                    <block type="text">
-                                                                        <field name="TEXT">0,10,0,0</field>
-                                                                    </block>
-                                                                </value>
-                                                                <next>
-                                                                    <block type="component_method">
-                                                                        <mutation component_type="AdvancedDecoration" method_name="SetMargin" is_generic="false" instance_name="SC_AD"></mutation>
-                                                                        <field name="COMPONENT_SELECTOR">SC_AD</field>
-                                                                        <value name="ARG0">
-                                                                            <block type="component_component_block">
-                                                                                <mutation component_type="HorizontalArrangement" instance_name="S_L_Div1"></mutation>
-                                                                                <field name="COMPONENT_SELECTOR">S_L_Div1</field>
-                                                                            </block>
-                                                                        </value>
-                                                                        <value name="ARG1">
-                                                                            <block type="text">
-                                                                                <field name="TEXT">10,0,10,0</field>
-                                                                            </block>
-                                                                        </value>
-                                                                    </block>
-                                                                </next>
-                                                            </block>
-                                                        </next>
-                                                    </block>
-                                                </next>
-                                            </block>
-                                        </next>
-                                    </block>
-                                </next>
-                            </block>
-                        </next>
-                    </block>
-                </next>
-            </block>
-        </statement>
-    </block>
-</xml>
+            <xml xmlns="http://www.w3.org/1999/xhtml"><block type="procedures_defnoreturn"><field name="NAME">test_blocks</field><statement name="STACK"><block type="component_set_get"><mutation component_type="AdvancedDecoration" set_or_get="set" property_name="AccentDark" is_generic="false" instance_name="AdvancedDecoration1"></mutation><field name="COMPONENT_SELECTOR">AdvancedDecoration1</field><field name="PROP">AccentDark</field><value name="VALUE"><block type="component_method"><mutation component_type="AdvancedDecoration" method_name="SetAlpha" is_generic="false" instance_name="AdvancedDecoration1"></mutation><field name="COMPONENT_SELECTOR">AdvancedDecoration1</field><value name="ARG0"><block type="component_set_get"><mutation component_type="AdvancedDecoration" set_or_get="get" property_name="AccentDark" is_generic="false" instance_name="AdvancedDecoration1"></mutation><field name="COMPONENT_SELECTOR">AdvancedDecoration1</field><field name="PROP">AccentDark</field></block></value><value name="ARG1"><block type="lexical_variable_get"><field name="VAR">global SampleVariable</field></block></value></block></value></block></statement></block></xml>
         </textarea>
         <!-- Button to trigger XML to JSON conversion -->
         <button onclick="convertXmlToJson()">Convert to JSON</button>

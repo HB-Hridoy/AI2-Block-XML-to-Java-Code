@@ -46,17 +46,17 @@ class AI2XMLParser {
 
         // Prepare block data with block type and instance name
         const blockData = {
-            'Block type': type,
-            'Instance_name': mutation.getAttribute('instance_name'),
+            'block_type': this.parseBlockType(block),
+            'component': mutation.getAttribute('instance_name'),
         };
 
         // Handle different block types (method or property)
         if (type === 'component_method') {
             blockData['method_name'] = mutation.getAttribute('method_name');
             blockData['Arguments'] = this.parseArguments(block); // Parse arguments
+            //console.log(block);
         } else if (type === 'component_set_get') {
-            blockData['PROP'] = block.querySelector('field[name="PROP"]').textContent;
-            blockData['set_or_get'] = mutation.getAttribute('set_or_get');
+            blockData['property'] = block.querySelector('field[name="PROP"]').textContent;
             blockData['value'] = this.parseValue(block.querySelector('value[name="VALUE"]'));
         }
 
@@ -69,9 +69,11 @@ class AI2XMLParser {
         block.querySelectorAll('value[name^="ARG"]').forEach((arg) => {
             const argName = arg.getAttribute('name');
             const argBlock = arg.querySelector('block');
+            const argType = this.parseBlockType(argBlock);
+
             if (argBlock) {
                 args[argName] = {
-                    type: argBlock.getAttribute('type'),
+                    block_type: argType,
                     value: this.getBlockValue(argBlock)
                 };
             }
@@ -85,7 +87,7 @@ class AI2XMLParser {
         const block = valueBlock.querySelector('block');
         if (block) {
             return {
-                type: block.getAttribute('type'),
+                block_type: this.parseBlockType(block),
                 value: this.getBlockValue(block)
             };
         }
@@ -104,8 +106,56 @@ class AI2XMLParser {
                 component: block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent,
                 property: block.querySelector('field[name="PROP"]').textContent
             };
+        } else if (type === 'component_method') {
+            //console.log(block);
+            const valueData = this.parseBlock(block);
+            return valueData;
+        } else if (type === 'math_number') {
+            const numStr = block.querySelector('field[name="NUM"]').textContent;
+
+            // Check if the string is a valid number
+            if (!isNaN(numStr) && numStr.trim() !== '') {
+                const num = parseInt(numStr, 10);
+
+                // Validate the parsed number
+                if (!isNaN(num)) {
+                    return num;
+                } else {
+                    console.error("Error: Parsed value is not a valid integer.");
+                    return null;  // or some default value like 0
+                }
+            } else {
+                console.error("Error: Text content is not a valid number.");
+                return null;  // or some default value like 0
+            }
         }
         return null;
+    }
+
+    parseBlockType(block) {
+
+        const blockType = block.getAttribute('type');
+
+        if (blockType === 'component_set_get'){
+            const blockMutation = block.querySelector('mutation');
+        
+            // Ensure mutation element exists
+            if (!blockMutation) {
+                return;  // Skip if mutation element is missing
+            }
+
+            const argSetOrGet = blockMutation.getAttribute('set_or_get');
+            if ( argSetOrGet === 'get') {
+                return 'GetProperty';
+            } else if (argSetOrGet === 'set'){
+                return 'SetProperty'
+            }
+        } else if (blockType === 'component_component_block') {
+            return 'GetComponent'
+        }
+        else{
+            return blockType;
+        }
     }
 }
 
