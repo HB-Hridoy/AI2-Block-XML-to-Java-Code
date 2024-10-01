@@ -60,6 +60,7 @@ class AI2XMLParserJAVA_v2 {
             case 'SetProperty': {
                 const property = block.querySelector('field[name="PROP"]').textContent;
                 const value = this.parseValue(block.querySelector('value[name="VALUE"]'));
+                //console.log('Value - ' + value);
                 return `SetProperty(GetComponentByName("${component}"), "${property}", ${value?.value});`;
             }
             default:
@@ -82,11 +83,15 @@ class AI2XMLParserJAVA_v2 {
 
             const argBlockType = this.parseBlockType(argBlock);
             const argBlockValue = this.getBlockValue(argBlock);
+            //console.log(argBlockType);
 
             // Handle different block types
             switch (argBlockType) {
                 case 'GetProperty':
                     args.push(argBlockValue.value);
+                    break;
+                case 'GetComponent':
+                    args.push(`GetComponentByName("${argBlockValue}")`);
                     break;
                 case 'GetComponent':
                     args.push(`GetComponentByName("${argBlockValue}")`);
@@ -119,7 +124,7 @@ class AI2XMLParserJAVA_v2 {
 
         const blockType = this.parseBlockType(block);
         const blockValue = this.getBlockValue(block);
-
+        
         switch (blockType) {
             case 'GetProperty':
                 return {
@@ -129,6 +134,7 @@ class AI2XMLParserJAVA_v2 {
                 return {
                     value: `GetComponentByName("${blockValue.component}")`
                 };
+            case 'component_method':
             case 'text':
             case 'math_number':
                 return {
@@ -143,7 +149,6 @@ class AI2XMLParserJAVA_v2 {
     // Extract value from a block (handles different types)
     getBlockValue(block) {
         const type = block.getAttribute('type');
-        
         switch (type) {
             case 'text': {
                 const textValue = block.querySelector('field[name="TEXT"]').textContent;
@@ -153,13 +158,28 @@ class AI2XMLParserJAVA_v2 {
                 return block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
             }
             case 'component_set_get': {
-                return {
-                    component: block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent,
-                    property: block.querySelector('field[name="PROP"]').textContent
-                };
+                const blockMutation = block.querySelector('mutation');
+                const blockComponent = block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
+                const blockProperty = block.querySelector('field[name="PROP"]').textContent;
+                if (!blockMutation) return null; // Return null if mutation is missing
+
+                const setOrGet = blockMutation.getAttribute('set_or_get');
+
+                switch (setOrGet) {
+                    case 'set' : {
+                        return "SetProp"
+                    }
+                    case 'get' : {
+                        return {
+                            value: `GetProperty(GetComponentByName("${blockComponent}"), "${blockProperty}")`
+                        };
+                    }
+                }
             }
             case 'component_method': {
+                //console.log(this.parseBlock(block));
                 return this.parseBlock(block); // Delegate to parseBlock for method blocks
+
             }
             case 'lexical_variable_get': {
                 const varValue = block.querySelector('field[name="VAR"]').textContent;
@@ -195,7 +215,7 @@ class AI2XMLParserJAVA_v2 {
             }
             case 'lexical_variable_get': {
                 const varValue = block.querySelector('field[name="VAR"]').textContent;
-                return varValue.startsWith('GetComponent_') ? 'GetComponent' : blockType;
+                return varValue.startsWith('GetComponent_') ? 'GetComponent' : 'undefined variable';
             }
             default: {
                 return blockType; // Default to returning the block type
@@ -207,19 +227,33 @@ class AI2XMLParserJAVA_v2 {
 
 // Function to convert XML input to JSON format and display the result
 function convertXmlToJavaV2() {
-    const xmlInput = document.getElementById('xmlInput').value; // Get the input XML string
+    //const xmlInput = document.getElementById('xmlInput').value; // Get the input XML string
     //const resultDiv = document.getElementById('result'); // Get the result display element
+    
+    const xmlInput = xmlInputEditor.getValue();
 
     try {
         const parser = new AI2XMLParserJAVA_v2(xmlInput); // Create a new AI2XMLParser instance
         const result = parser.parse(); // Parse the XML
 
-        // Convert to JSON and replace escaped quotes
-       // resultDiv.textContent = JSON.stringify(result, null, 2).replace(/\\"/g, '"'); // Display the parsed result as JSON
-        //resultDiv.textContent = result; // Display the parsed result as JSON
-        codeEditor.setValue(JSON.stringify(result, null, 2).replace(/\\"/g, '"'))
+        outputEditor.setValue('');
+
+            // Loop through keys from 1 to the maximum number
+            for (let i = 1; i <= Object.keys(result).length; i++) {
+                const key = i.toString(); // Convert number to string
+                //outputEditor.setLine(i, jsonData[key]);
+                //outputEditor.replaceRange(jsonData[key], CodeMirror.Pos(i));
+
+                var cursor = outputEditor.getCursor(); // Get the current cursor position
+                outputEditor.replaceRange(result[key] + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
+                //outputEditor.focus(); // Keep focus on the editor
+            }
+            //const formattedString = formattedLines.join('\n'); // Join lines with new line character
+            //outputEditor.setValue(formattedString); // Set the formatted string in CodeMirror
+        
     
     } catch (error) {
-        resultDiv.textContent = 'Error parsing XML: ' + error.message; // Display error if parsing fails
+        outputEditor.setValue('Error parsing XML: ' + error.message);
+        //resultDiv.textContent = 'Error parsing XML: ' + error.message; // Display error if parsing fails
     }
 }

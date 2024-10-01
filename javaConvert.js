@@ -234,7 +234,7 @@ class AI2XMLParserJAVA {
 
 // Function to convert XML input to JSON format and display the result
 function convertXmlToJava() {
-    const xmlInput = document.getElementById('xmlInput').value; // Get the input XML string
+    const xmlInput = xmlInputEditor.getValue(); // Get the input XML string
     const resultDiv = document.getElementById('result'); // Get the result display element
 
     try {
