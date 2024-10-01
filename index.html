@@ -6,6 +6,9 @@
     <title>AI2 XML to JSON Converter (Fixed)</title>
     <!-- Link to external CSS file -->
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css"> <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css"> <!-- Optional: Theme CSS -->
+    
 </head>
 <body>
     <!-- Main container to hold the content -->
@@ -150,12 +153,39 @@
         <!-- Button to trigger XML to JSON conversion -->
         <button onclick="convertXmlToJson()">Convert to JSON</button>
         <button onclick="convertXmlToJava()">Convert to JAVA</button>
+        <button onclick="convertXmlToJavaV2()">Convert to JAVA V2</button>
         <!-- Preformatted block to display the result -->
         <pre id="result"></pre>
+
+        <div>
+          <h2>Output</h2>
+          <textarea id="codeEditor" placeholder="Code editor..."></textarea>
+      </div>
     </div>
 
     <!-- Link to external JavaScript file -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script> <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script> <!-- XML Mode -->
+    
+    <script>
+        // Initialize CodeMirror
+        var codeEditor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+            lineNumbers: true,
+            mode: "application/json", // Change to your preferred mode
+            theme: "material", // Change to your preferred theme
+        });
+
+        // Initialize CodeMirror
+        var xmlInput = CodeMirror.fromTextArea(document.getElementById("xmlInput"), {
+            lineNumbers: true,
+            mode: "application/xml", // Change to your preferred mode
+            theme: "material", // Change to your preferred theme
+        });
+    </script>
+
     <script src="script.js"></script>
     <script src="javaConvert.js"></script>
+    <script src="javaConvertV2.js"></script>
 </body>
 </html>

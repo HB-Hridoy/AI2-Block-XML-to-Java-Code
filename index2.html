@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI2 XML to Java Converter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css"> <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/material.min.css"> <!-- Optional: Theme CSS -->
+    
+</head>
+<body class="bg-gray-100 flex h-screen items-center justify-center">
+
+    <!-- Container -->
+    <div class="w-4/5 h-4/5 bg-white rounded-lg shadow-lg flex p-4">
+        
+        <!-- XML Input Section -->
+        <div class="w-1/3 border-r-2 p-4">
+            <h2 class="text-xl font-bold mb-2">XML Input</h2>
+            <textarea id="xmlInput" class="w-full h-4/5 border-2 border-gray-300 p-2" placeholder="Enter XML here..."></textarea>
+        </div>
+
+        <!-- Conversion and Conditions Section -->
+        <div class="w-1/3 flex flex-col items-center justify-center space-y-4 p-4">
+            <button class="w-3/4 py-2 bg-blue-500 text-white rounded-lg" onclick="convertToJSON()">Convert to JSON</button>
+            <button class="w-3/4 py-2 bg-green-500 text-white rounded-lg" onclick="convertToJava()">Convert to Java</button>
+
+            <div class="w-3/4 flex items-center">
+                <input type="checkbox" id="conditions" class="mr-2">
+                <label for="conditions" class="text-lg">Apply Conditions</label>
+            </div>
+
+            <input type="text" id="additionalInput" class="w-3/4 border-2 border-gray-300 p-2" placeholder="Additional Input">
+        </div>
+
+        <!-- Output Section -->
+        <div class="w-1/3 border-l-2 p-4">
+            <h2 class="text-xl font-bold mb-2">Output</h2>
+            <textarea id="codeEditor" class="w-full h-4/5 mt-4 border-2 border-gray-300 p-2" placeholder="Code editor..."></textarea>
+        </div>
+
+    </div>
+
+    <!-- JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script> <!-- CodeMirror JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script> <!-- JavaScript Mode -->
+    <script>
+        // Initialize CodeMirror
+        var codeEditor = CodeMirror.fromTextArea(document.getElementById("codeEditor"), {
+            lineNumbers: true,
+            mode: "javascript", // Change to your preferred mode
+            theme: "material", // Change to your preferred theme
+        });
+    </script>
+
+    <script>
+        function convertToJSON() {
+            const xml = document.getElementById('xmlInput').value;
+            const output = document.getElementById('output');
+            try {
+                // Simple XML to JSON conversion (mocked for the prototype)
+                const json = JSON.stringify({ "converted": "This is a mock JSON output." }, null, 2);
+                output.textContent = json;
+            } catch (e) {
+                output.textContent = "Error converting XML to JSON.";
+            }
+        }
+
+        function convertToJava() {
+            const xml = document.getElementById('xmlInput').value;
+            const output = document.getElementById('output');
+            try {
+                // Simple XML to Java conversion (mocked for the prototype)
+                const java = "public class Mock {\n    // This is a mock Java output\n}";
+                output.textContent = java;
+            } catch (e) {
+                output.textContent = "Error converting XML to Java.";
+            }
+        }
+    </script>
+</body>
+</html>
