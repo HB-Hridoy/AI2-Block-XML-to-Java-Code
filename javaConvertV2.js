@@ -1,4 +1,8 @@
 // Class for parsing AI2 XML and converting it into JSON
+
+// Jobs to do - 
+// 1. Arguments are getting maximum numbers
+// undefined in set properties
 class AI2XMLParserJAVA_v2 {
     constructor(xml) {
         // DOMParser to parse XML from the string
