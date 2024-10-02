@@ -46,7 +46,7 @@ class AI2XMLParserJAVA_v2 {
         const mutation = block.querySelector('mutation');
         if (!mutation) return null; // Skip block if no mutation
 
-        const blockType = this.parseBlockType(block);
+        const blockType = this.getBlockType(block);
         const component = mutation.getAttribute('instance_name');
         
         // Prepare block data with block type and instance name
@@ -58,14 +58,15 @@ class AI2XMLParserJAVA_v2 {
         switch (blockType) {
             case 'component_method': {
                 const methodName = mutation.getAttribute('method_name');
-                const args = this.parseArguments(block); // Parse arguments
+                let args = '';
+                args = this.parseArguments(block); // Parse arguments
                 return `Invoke(GetComponentByName("${component}"), "${methodName}", ${args});`;
             }
             case 'SetProperty': {
-                const property = block.querySelector('field[name="PROP"]').textContent;
-                const value = this.parseValue(block.querySelector('value[name="VALUE"]'));
+                const propertyName = block.querySelector('field[name="PROP"]').textContent;
+                const propertyValue = this.parseValue(block.querySelector('value[name="VALUE"]'));
                 //console.log('Value - ' + value);
-                return `SetProperty(GetComponentByName("${component}"), "${property}", ${value?.value});`;
+                return `SetProperty(GetComponentByName("${component}"), "${propertyName}", ${propertyValue});`;
             }
             default:
                 return blockData;
@@ -73,51 +74,39 @@ class AI2XMLParserJAVA_v2 {
     }
 
 
-    // Function to parse arguments from the block
-    parseArguments(block) {
-        const args = [];
-        let index = 0;
+// Function to parse arguments from the block
+parseArguments(block) {
+    const args = [];
+    let argIndex = 0; // Start with the first argument index
 
-        while (true) {
-            const argField = block.querySelector(`value[name="ARG${index}"]`);
-            if (!argField) break; // Exit loop if ARG not found
+    // Loop through ARG indices
+    while (true) {
+        // Use a more general selector and then filter for direct children
+        const argField = Array.from(block.children).find(child => child.getAttribute('name') === `ARG${argIndex}`);
+        if (!argField) break; // Exit loop if ARG not found
 
-            const argBlock = argField.querySelector('block');
-            if (!argBlock) break; // Exit loop if argBlock not found
+        const argBlock = argField.querySelector('block'); // Check for the child block
+        if (!argBlock) break; // Exit loop if argBlock not found
 
-            const argBlockType = this.parseBlockType(argBlock);
-            const argBlockValue = this.getBlockValue(argBlock);
-            //console.log(argBlockType);
-
-            // Handle different block types
-            switch (argBlockType) {
-                case 'GetProperty':
-                    args.push(argBlockValue.value);
-                    break;
-                case 'GetComponent':
-                    args.push(`GetComponentByName("${argBlockValue}")`);
-                    break;
-                case 'GetComponent':
-                    args.push(`GetComponentByName("${argBlockValue}")`);
-                    break;
-                case 'text':
-                case 'math_number':
-                    args.push(argBlockValue);
-                    break;
-                default:
-                    args.push({
-                        block_type: argBlockType,
-                        value: argBlockValue,
-                    });
-                    break;
-            }
-            index++; // Increment index for next ARG
+        // Get the block type for the argument
+        const argBlockType = this.getBlockType(argBlock);
+        if (!argBlockType) {
+            console.error(`Error: Block type for ARG${argIndex} not found.`);
+            argIndex++; // Increment index to check the next argument
+            continue; // Skip this argument if block type is not found
         }
 
-        // Format the args into new Object[]{ARG0, ARG1, ARG2, ...}
-        const formattedArgs = args.join(", ");
-        return `new Object[]{${formattedArgs}}`; // Return formatted string
+        // Parse and retrieve the argument value
+        const argBlockValue = this.getBlockValue(argBlock, argBlockType);
+        args.push(argBlockValue); // Add to args array
+        argIndex++; // Move to the next argument index
     }
+
+    // Format the args into new Object[]{ARG0, ARG1, ARG2, ...}
+    const formattedArgs = args.join(", ");
+    return `new Object[]{${formattedArgs}}`; // Return formatted string
+}
+
 
     // Parse value elements within blocks
     parseValue(valueBlock) {
@@ -126,86 +115,75 @@ class AI2XMLParserJAVA_v2 {
         const block = valueBlock.querySelector('block');
         if (!block) return null;
 
-        const blockType = this.parseBlockType(block);
-        const blockValue = this.getBlockValue(block);
+        const blockType = this.getBlockType(block);
+        const blockValue = this.getBlockValue(block, blockType);
         
-        switch (blockType) {
-            case 'GetProperty':
-                return {
-                    value: `GetProperty(GetComponentByName("${blockValue.component}"), "${blockValue.property}")`
-                };
-            case 'GetComponent':
-                return {
-                    value: `GetComponentByName("${blockValue.component}")`
-                };
-            case 'component_method':
-            case 'text':
-            case 'math_number':
-                return {
-                    value: blockValue
-                };
-            default:
-                return null; // Return null if block type is not recognized
-        }
+        return blockValue;
     }
 
 
     // Extract value from a block (handles different types)
-    getBlockValue(block) {
-        const type = block.getAttribute('type');
-        switch (type) {
+    getBlockValue(block, blockType) {
+
+        if (!blockType) {
+            return "getBlockValue - No block type found"; // Handle missing block type
+        }
+        //console.log(blockType);
+        //console.log(block);
+        
+        switch (blockType) {
             case 'text': {
                 const textValue = block.querySelector('field[name="TEXT"]').textContent;
                 return `"${textValue}"`;
             }
-            case 'component_component_block': {
-                return block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
-            }
-            case 'component_set_get': {
+            case 'GetComponent': {
                 const blockMutation = block.querySelector('mutation');
-                const blockComponent = block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
-                const blockProperty = block.querySelector('field[name="PROP"]').textContent;
+                //console.log(blockMutation);
+                const componentName = blockMutation.getAttribute('instance_name');
+                //const componentName = block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
+                return `GetComponentByName("${componentName}")`
+            }
+            case 'GetProperty' : {
+                const blockMutation = block.querySelector('mutation');
+                const componentName = blockMutation.getAttribute('instance_name');
+                const propertyName = blockMutation.getAttribute('property_name');
+                //const blockComponent = block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
+                //const blockProperty = block.querySelector('field[name="PROP"]').textContent;
                 if (!blockMutation) return null; // Return null if mutation is missing
 
-                const setOrGet = blockMutation.getAttribute('set_or_get');
-
-                switch (setOrGet) {
-                    case 'set' : {
-                        return "SetProp"
-                    }
-                    case 'get' : {
-                        return {
-                            value: `GetProperty(GetComponentByName("${blockComponent}"), "${blockProperty}")`
-                        };
-                    }
-                }
+                 return `GetProperty(GetComponentByName("${componentName}"), "${propertyName}")`;
             }
             case 'component_method': {
                 //console.log(this.parseBlock(block));
                 return this.parseBlock(block); // Delegate to parseBlock for method blocks
 
             }
-            case 'lexical_variable_get': {
-                const varValue = block.querySelector('field[name="VAR"]').textContent;
-                return varValue.startsWith('GetComponent_') ? varValue.replace('GetComponent_', '') : null;
-            }
-            default:
-                if (type.startsWith('math_')) {
-                    if (type === 'math_number') {
-                        const numStr = block.querySelector('field[name="NUM"]').textContent;
+            case 'number' : {
+                const numStr = block.querySelector('field[name="NUM"]').textContent;
                         const num = parseInt(numStr, 10);
                         return isNaN(num) ? 0 : num;
-                    }
-                    return 'Math operation cannot be parsed (Do it yourself)';
+                        
+            }
+            case 'lexical_variable_get' : {
+                const varValue = block.querySelector('field[name="VAR"]').textContent;
+                if (varValue.startsWith('GetComponent_')){
+                    const componentName =  varValue.replace('GetComponent_', '');
+                    return `GetComponentByName("${componentName}")`
+                } else {
+                    //return varValue.startsWith('GetComponent_') ? 'GetComponent' : 'undefined variable';
+                return 'varibel get'
                 }
-                return null; // Default return for unhandled block types
+                
+            }
+            default:
+                return "getBlockValue - No value"; // Default return for unhandled block types
         }
     }
 
 
-    parseBlockType(block) {
+    getBlockType(block) {
         const blockType = block.getAttribute('type');
-
+        
         switch (blockType) {
             case 'component_set_get': {
                 const blockMutation = block.querySelector('mutation');
@@ -218,12 +196,19 @@ class AI2XMLParserJAVA_v2 {
                 return 'GetComponent';
             }
             case 'lexical_variable_get': {
-                const varValue = block.querySelector('field[name="VAR"]').textContent;
-                return varValue.startsWith('GetComponent_') ? 'GetComponent' : 'undefined variable';
+                //const varValue = block.querySelector('field[name="VAR"]').textContent;
+                //return varValue.startsWith('GetComponent_') ? 'GetComponent' : 'undefined variable';
+
+                return 'lexical_variable_get';
             }
-            default: {
-                return blockType; // Default to returning the block type
+            case 'math_number' : {
+                return 'number';
             }
+            case 'text' : {
+                return 'text';
+            }
+            default: 
+                return blockType;
         }
     }
 
