@@ -17,46 +17,39 @@
 <body>
     <!-- Main container to hold the content -->
     <div class="container">
+
+        <!-- Conditions popup -->
+        <div class="conditions-overlay" id="conditions-overlay"></div>
+        <div id="conditions-popup">
+            <div id="popup-header">
+                Conditions Popup
+            </div>
+            <textarea id="conditions-code-editor" ></textarea>
+            <div id="popup-header">
+                <button id="conditions-close-btn">Save Conditions</button>
+            </div>
+        </div>
+
         <!-- Heading for the page -->
         <h1>AI2 XML to JSON Converter (Fixed)</h1>
         <!-- Textarea for user to input XML -->
         <textarea id="xmlInput" placeholder="Paste your AI2 XML here...">
           </textarea>
         <!-- Button to trigger XML to JSON conversion -->
-        <button onclick="convertXmlToJson()">Convert to JSON</button>
-        <button onclick="convertXmlToJava()">Convert to JAVA</button>
         <button onclick="convertXmlToJavaV2()">Convert to JAVA V2</button>
-        <!-- Preformatted block to display the result -->
-        <pre id="result"></pre>
-
+        <button id="open-conditions-popup">Open CodeMirror Editor</button>
+        <!-- Checkbox input -->
+        <label for="applyConditionsCheckbox">Apply Conditions</label>
+        <input type="checkbox" id="applyConditionsCheckbox">
+    
         <div>
           <h2>Output</h2>
           <textarea id="outputEditor" placeholder="Code editor..."></textarea>
       </div>
     </div>
+    
 
     <!-- Link to external JavaScript file -->
-
-    <script>
-      document.addEventListener('DOMContentLoaded', function () {
-          // Initialize CodeMirror for XML input
-          window.xmlInputEditor = CodeMirror.fromTextArea(document.getElementById("xmlInput"), {
-              lineNumbers: true,
-              mode: "application/xml",
-              theme: "material",
-          });
-
-          // Initialize CodeMirror for output
-          window.outputEditor = CodeMirror.fromTextArea(document.getElementById("outputEditor"), {
-              lineNumbers: true,
-              mode: "application/json", // Change to your preferred mode
-              theme: "material",
-          });
-      });
-  </script>
-
-    <script src="script.js"></script>
-    <script src="javaConvert.js"></script>
     <script src="javaConvertV2.js"></script>
 </body>
 </html>

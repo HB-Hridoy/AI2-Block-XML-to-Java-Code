@@ -1,0 +1,56 @@
+<xml>
+    <condition>
+        <oldValue>GetComponentByName("ShapeableView1")</oldValue>
+        <newValue>ShapeableView</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("AdvancedDecoration1")</oldValue>
+        <newValue>AdvancedDecoration</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("ImageScale1")</oldValue>
+        <newValue>ImageScale</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("ThMLT1")</oldValue>
+        <newValue>ThMLT</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("DynamicComponents1")</oldValue>
+        <newValue>DynamicComponents</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("DynamicClickUtil1")</oldValue>
+        <newValue>DynamicClickUtil</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("AirDArrangementManagement1")</oldValue>
+        <newValue>ScreenManagement</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("DevYBImageLoader1")</oldValue>
+        <newValue>DevYBImageLoader</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("Flexbox1")</oldValue>
+        <newValue>Flexbox</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetComponentByName("ComponentTools1")</oldValue>
+        <newValue>ComponentTools</newValue>
+    </condition>
+
+
+    <condition>
+        <oldValue>GetProperty(GetComponentByName("ThMLT1"), "ColorPrimary")</oldValue>
+        <newValue>ColorPrimary</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetProperty(GetComponentByName("ThMLT1"), "ColorSecondary")</oldValue>
+        <newValue>ColorSecondary</newValue>
+    </condition>
+    <condition>
+        <oldValue>GetProperty(GetComponentByName("ThMLT1"), "ColorAccent")</oldValue>
+        <newValue>ColorAccent</newValue>
+    </condition>
+</xml>

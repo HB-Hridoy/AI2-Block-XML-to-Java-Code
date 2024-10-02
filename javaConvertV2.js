@@ -214,11 +214,101 @@ parseArguments(block) {
 
 }
 
+// Initialize code editors for input and output
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize CodeMirror for XML input
+    window.xmlInputEditor = CodeMirror.fromTextArea(document.getElementById("xmlInput"), {
+        lineNumbers: true,
+        mode: "application/xml",
+        theme: "material",
+    });
+
+    // Initialize CodeMirror for output
+    window.outputEditor = CodeMirror.fromTextArea(document.getElementById("outputEditor"), {
+        lineNumbers: true,
+        mode: "application/json", // Change to your preferred mode
+        theme: "material",
+    });
+});
+
+ // Get the checkbox element and status div
+ const conditionsCheckbox = document.getElementById('applyConditionsCheckbox');
+ let conditionsCheckboxstatus = false;
+ let conditions;
+
+ // Add an event listener to the checkbox
+ conditionsCheckbox.addEventListener('change', function() {
+    if (conditionsCheckbox.checked) {
+        // Parse the conditions XML
+        const conditionsXmlString = conditionsCodeEditor.getValue();
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(conditionsXmlString, "text/xml");
+
+        // Store conditions as an array of objects
+        conditions = Array.from(xmlDoc.getElementsByTagName("condition")).map(condition => ({
+            oldValue: condition.getElementsByTagName("oldValue")[0].textContent,
+            newValue: condition.getElementsByTagName("newValue")[0].textContent
+        }));
+
+        //console.log(conditions);  // Shows parsed conditions
+        conditionsCheckboxstatus = true;
+
+     } else {
+        // Checkbox is unchecked
+        conditionsCheckboxstatus = false
+     }
+ });
+
+// Function to replace oldValue with newValue in a given text
+function ApplyConditions(text) {
+    conditions.forEach(condition => {
+       // Check if oldValue is found in the text
+       if (text.includes(condition.oldValue)) {
+        // Replace all occurrences of oldValue with newValue
+        while (text.indexOf(condition.oldValue) !== -1) {
+            text = text.replace(condition.oldValue, condition.newValue);
+        }
+    }
+    });
+    return text;
+}
+
+// Initialize Conditions Popup
+
+const openPopupBtn = document.getElementById('open-conditions-popup');
+const closePopupBtn = document.getElementById('conditions-close-btn');
+const conditionsPopup = document.getElementById('conditions-popup');
+const overlay = document.getElementById('conditions-overlay');
+const codeEditor = document.getElementById('conditions-code-editor');
+
+window.conditionsCodeEditor = CodeMirror.fromTextArea(codeEditor, {
+    lineNumbers: false,
+    mode: 'application/json',
+    theme: 'material',
+});
+
+openPopupBtn.addEventListener('click', () => {
+    overlay.style.display = 'block';
+    conditionsPopup.style.display = 'block';
+    conditionsCodeEditor.setSize("100%", "calc(80vh - 100px)"); // Set size to fill the popup, minus the header
+});
+
+closePopupBtn.addEventListener('click', () => {
+    overlay.style.display = 'none';
+    conditionsPopup.style.display = 'none';
+});
+
+overlay.addEventListener('click', () => {
+    overlay.style.display = 'none';
+    conditionsPopup.style.display = 'none';
+});
+
+
+
+
 // Function to convert XML input to JSON format and display the result
 function convertXmlToJavaV2() {
-    //const xmlInput = document.getElementById('xmlInput').value; // Get the input XML string
-    //const resultDiv = document.getElementById('result'); // Get the result display element
-    
     const xmlInput = xmlInputEditor.getValue();
 
     try {
@@ -230,19 +320,21 @@ function convertXmlToJavaV2() {
             // Loop through keys from 1 to the maximum number
             for (let i = 1; i <= Object.keys(result).length; i++) {
                 const key = i.toString(); // Convert number to string
-                //outputEditor.setLine(i, jsonData[key]);
-                //outputEditor.replaceRange(jsonData[key], CodeMirror.Pos(i));
 
                 var cursor = outputEditor.getCursor(); // Get the current cursor position
-                outputEditor.replaceRange(result[key] + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
-                //outputEditor.focus(); // Keep focus on the editor
+                if (conditionsCheckboxstatus){
+                    const resultAfterConditions = ApplyConditions(result[key]);
+                    console.log('Applied Conditions - ' + resultAfterConditions);
+                    outputEditor.replaceRange(resultAfterConditions + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
+                } else {
+                    outputEditor.replaceRange(result[key] + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
+                }
+                
+                //console.log(result[key]);
+
             }
-            //const formattedString = formattedLines.join('\n'); // Join lines with new line character
-            //outputEditor.setValue(formattedString); // Set the formatted string in CodeMirror
-        
     
     } catch (error) {
-        outputEditor.setValue('Error parsing XML: ' + error.message);
-        //resultDiv.textContent = 'Error parsing XML: ' + error.message; // Display error if parsing fails
+        outputEditor.setValue('Error parsing XML: ' + error.message);// Display error if parsing fails
     }
 }

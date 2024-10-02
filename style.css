@@ -59,3 +59,40 @@ button:hover {
     padding: 10px;
     border-radius: 4px;
 }
+
+#conditions-popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: 80vh; /* Use vh to ensure relative to viewport height */
+    width: 95vw; /* Use vw to ensure relative to viewport width */
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    overflow: hidden;
+}
+#popup-header {
+    background: #007bff;
+    color: white;
+    padding: 10px;
+    text-align: center;
+    position: relative;
+}
+
+.conditions-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+#conditions-code-editor {
+    height: calc(80vh - 100px); /* Subtract header height */
+    width: 100%; /* Make the editor fill the available width */
+    margin: 0; /* Ensure no margin is applied */
+}
