@@ -231,28 +231,18 @@ document.addEventListener('DOMContentLoaded', function () {
         theme: "material",
     });
     outputEditor.setSize(null, 500);
+
+    
 });
 
  // Get the checkbox element and status div
  const conditionsCheckbox = document.getElementById('applyConditionsCheckbox');
  let conditionsCheckboxstatus = false;
- let conditions;
 
  // Add an event listener to the checkbox
  conditionsCheckbox.addEventListener('change', function() {
     if (conditionsCheckbox.checked) {
-        // Parse the conditions XML
-        const conditionsXmlString = conditionsCodeEditor.getValue();
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(conditionsXmlString, "text/xml");
 
-        // Store conditions as an array of objects
-        conditions = Array.from(xmlDoc.getElementsByTagName("condition")).map(condition => ({
-            oldValue: condition.getElementsByTagName("oldValue")[0].textContent,
-            newValue: condition.getElementsByTagName("newValue")[0].textContent
-        }));
-
-        //console.log(conditions);  // Shows parsed conditions
         conditionsCheckboxstatus = true;
 
      } else {
@@ -263,47 +253,117 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Function to replace oldValue with newValue in a given text
 function ApplyConditions(text) {
-    conditions.forEach(condition => {
-       // Check if oldValue is found in the text
-       if (text.includes(condition.oldValue)) {
-        // Replace all occurrences of oldValue with newValue
-        while (text.indexOf(condition.oldValue) !== -1) {
-            text = text.replace(condition.oldValue, condition.newValue);
-        }
+    let conditions = JSON.parse(localStorage.getItem('conditions')); // Retrieve conditions from localStorage
+    let isConditionsReady = localStorage.getItem('isConditionsReady'); // Retrieve isConditionsReady flag
+    
+    // Check if conditions and isConditionsReady flag are valid
+    if (conditions && isConditionsReady === 'true') {
+
+        conditions.forEach(condition => {
+            // Check if oldValue is found in the text
+            if (text.includes(condition.oldValue)) {
+             // Replace all occurrences of oldValue with newValue
+             while (text.indexOf(condition.oldValue) !== -1) {
+                 text = text.replace(condition.oldValue, condition.newValue);
+             }
+         }
+         });
+        return text; // Return the modified text
+    } else {
+        console.log('Conditions are not ready or not found');
+        return text; // Return the original text if conditions are not ready
     }
-    });
-    return text;
 }
 
-// Initialize Conditions Popup
+function copyInput() {
+    const inputValue = xmlInputEditor.getValue();
+    navigator.clipboard.writeText(inputValue).then(() => {
+        showSuccessToast('XML copied to clipboard');
+    }).catch(err => {
+        showDangerToast('Failed to copy XML to clipboard');
+    });
+}
 
-const openPopupBtn = document.getElementById('open-conditions-popup');
-const closePopupBtn = document.getElementById('conditions-close-btn');
-const conditionsPopup = document.getElementById('conditions-popup');
-const overlay = document.getElementById('conditions-overlay');
-const codeEditor = document.getElementById('conditions-code-editor');
+function clearInput() {
+    xmlInputEditor.setValue(''); // Clear the input editor
+}
 
-window.conditionsCodeEditor = CodeMirror.fromTextArea(codeEditor, {
-    lineNumbers: false,
-    mode: 'application/json',
-    theme: 'material',
+function copyOutput() {
+    const outputValue = outputEditor.getValue();
+    navigator.clipboard.writeText(outputValue).then(() => {
+        showSuccessToast('Output copied to clipboard');
+    }).catch(err => {
+        showDangerToast('Failed to copy output to clipboard');
+    });
+}
+
+function clearOutput() {
+    outputEditor.setValue(''); // Clear the output editor
+}
+
+
+
+
+ // Function to show success toast
+ function showSuccessToast(message) {
+    const toastElement = document.getElementById('toast-success');
+    const toastTextElement = document.getElementById('toast-success-text');
+    
+    toastTextElement.textContent = message;
+    toastElement.style.display = 'flex';
+
+    // Automatically hide the toast after 3 seconds
+    setTimeout(() => {
+        hideToast('toast-success');
+    }, 2000);  // Adjust duration as needed
+}
+
+// Function to show danger toast
+function showDangerToast(message) {
+    const toastElement = document.getElementById('toast-danger');
+    const toastTextElement = document.getElementById('toast-danger-text');
+    
+    toastTextElement.textContent = message;
+    toastElement.style.display = 'flex';
+
+    // Automatically hide the toast after 3 seconds
+    setTimeout(() => {
+        hideToast('toast-danger');
+    }, 2000);  // Adjust duration as needed
+}
+
+// Function to show warning toast
+function showWarningToast(message) {
+    const toastElement = document.getElementById('toast-warning');
+    const toastTextElement = document.getElementById('toast-warning-text');
+    
+    toastTextElement.textContent = message;
+    toastElement.style.display = 'flex';
+
+    // Automatically hide the toast after 3 seconds
+    setTimeout(() => {
+        hideToast('toast-warning');
+    }, 2000);  // Adjust duration as needed
+}
+
+// Function to hide a toast
+function hideToast(toastElement) {
+    const toast = document.getElementById(toastElement);
+    toast.style.display = 'none';
+}
+
+// Add event listeners to close buttons
+document.querySelectorAll('[data-dismiss-target]').forEach(button => {
+    button.addEventListener('click', function() {
+        const target = document.querySelector(this.getAttribute('data-dismiss-target'));
+        if (target) {
+            hideToast(target);
+        }
+    });
 });
 
-openPopupBtn.addEventListener('click', () => {
-    overlay.style.display = 'block';
-    conditionsPopup.style.display = 'block';
-    conditionsCodeEditor.setSize("100%", "calc(80vh - 100px)"); // Set size to fill the popup, minus the header
-});
 
-closePopupBtn.addEventListener('click', () => {
-    overlay.style.display = 'none';
-    conditionsPopup.style.display = 'none';
-});
 
-overlay.addEventListener('click', () => {
-    overlay.style.display = 'none';
-    conditionsPopup.style.display = 'none';
-});
 
 
 
@@ -324,8 +384,8 @@ function convertXmlToJavaV2() {
 
                 var cursor = outputEditor.getCursor(); // Get the current cursor position
                 if (conditionsCheckboxstatus){
-                    const resultAfterConditions = ApplyConditions(result[key]);
-                    console.log('Applied Conditions - ' + resultAfterConditions);
+                    const resultAfterConditions = ApplyConditions(ApplyConditions(result[key]));
+                    //console.log('Applied Conditions - ' + resultAfterConditions);
                     outputEditor.replaceRange(resultAfterConditions + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
                 } else {
                     outputEditor.replaceRange(result[key] + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
