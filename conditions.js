@@ -54,12 +54,40 @@ document.getElementById('currentConditionClearButton').addEventListener('click',
 // Delete Condition button
 const deleteButton = document.getElementById('deleteSavedConditionButton');
 const proceedDeleteSavedConditionButton = document.getElementById('proceedDeleteSavedConditionButton');
+const updateSavedConditionButton = document.getElementById('updateSavedConditionButton');
 proceedDeleteSavedConditionButton.style.display = 'none'; // Hide the button by default
+updateSavedConditionButton.style.display = 'none';
 
 deleteButton.addEventListener('click', function() {
     const selectedCondition = document.getElementById('conditionTemplateName').value;
-    deleteCondition(selectedCondition);
-    proceedDeleteSavedConditionButton.style.display = 'none'; // Hide after deleting
+    if (conditionExists(selectedCondition)){
+        deleteCondition(selectedCondition);
+        proceedDeleteSavedConditionButton.style.display = 'none'; // Hide after deleting
+        updateSavedConditionButton.style.display = 'none';
+    } else {
+        showDangerToast(`Template "${selectedCondition}" doesn't exists.`);
+    }
+    
+});
+
+updateSavedConditionButton.addEventListener('click', function() {
+    const conditionTemplateName = document.getElementById('conditionTemplateName').value.trim();
+    const xmlValue = conditionsCodeEditor.getValue();
+
+    if (!isValidXML(xmlValue)) {
+        conditionsCodeEditor.setOption('lint', true);
+        return;
+    }
+
+    if (conditionExists(conditionTemplateName)) {
+        saveConditionTemplate(conditionTemplateName, xmlValue);
+    } else {
+        showDangerToast(`Template "${conditionTemplateName}" doesn't exists.`);
+        //console.log(`Template "${conditionTemplateName}" already exists.`);
+        return;
+    }
+
+    
 });
 
 // Function to save condition to localStorage
@@ -70,6 +98,7 @@ function saveConditionTemplate(name, xml) {
     localStorage.setItem('lastWorkingXML', xml); // Save last working XML
 
     proceedDeleteSavedConditionButton.style.display = 'block'; // Show delete button on select
+    updateSavedConditionButton.style.display = 'block';
     showSuccessToast(`Template "${name}" saved successfully`);
 }
 
@@ -98,6 +127,7 @@ function addConditionToList(name) {
         conditionsCodeEditor.setValue(xmlValue);
         document.getElementById('conditionTemplateName').value = name;
         proceedDeleteSavedConditionButton.style.display = 'block'; // Show delete button on select
+        updateSavedConditionButton.style.display = 'block';
     });
 }
 

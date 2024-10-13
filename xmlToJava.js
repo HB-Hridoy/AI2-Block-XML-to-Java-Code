@@ -160,23 +160,36 @@ parseArguments(block) {
             }
             case 'number' : {
                 const numStr = block.querySelector('field[name="NUM"]').textContent;
-                        const num = parseInt(numStr, 10);
-                        return isNaN(num) ? 0 : num;
+                const num = parseInt(numStr, 10);
+                return isNaN(num) ? 0 : num;
                         
+            }
+            case 'boolean' : {
+                return block.querySelector('field[name="BOOL"]').textContent.toLowerCase();
+                
             }
             case 'lexical_variable_get' : {
                 const varValue = block.querySelector('field[name="VAR"]').textContent;
                 if (varValue.startsWith('GetComponent_')){
                     const componentName =  varValue.replace('GetComponent_', '');
                     return `GetComponentByName("${componentName}")`
-                } else {
+                } else if (varValue.startsWith('param_')){
+                    const paramIndex = varValue.split("_")[1];
+                    return `paramValues.get(${paramIndex})`
+                }  else if (varValue.startsWith('GetVar_')){
+                    return varValue.replace('GetVar_', '');
+                }
+                else {
                     //return varValue.startsWith('GetComponent_') ? 'GetComponent' : 'undefined variable';
-                return 'varibel get'
+                return 'unknown_variable_type'
                 }
                 
             }
+            case 'list' : {
+                return 'Make_a_list'
+            }
             default:
-                return "getBlockValue - No value"; // Default return for unhandled block types
+                return "No_Block_Value"; // Default return for unhandled block types
         }
     }
 
@@ -207,9 +220,48 @@ parseArguments(block) {
             case 'text' : {
                 return 'text';
             }
+            case 'logic_boolean' : {
+                return 'boolean';
+            }
+            case 'lists_create_with' : {
+                return 'list'
+            }
             default: 
                 return blockType;
         }
+    }
+
+    // Function to parse join block
+    parseJoinBlock(block) {
+        const jBlocks = [];
+        let joinIndex = 0; // Start with the first argument index
+
+        // Loop through ARG indices
+        while (true) {
+            // Use a more general selector and then filter for direct children
+            const joinField = Array.from(block.children).find(child => child.getAttribute('name') === `ADD${argIndex}`);
+            if (!joinField) break; // Exit loop if ARG not found
+
+            const argBlock = argField.querySelector('block'); // Check for the child block
+            if (!argBlock) break; // Exit loop if argBlock not found
+
+            // Get the block type for the argument
+            const argBlockType = this.getBlockType(argBlock);
+            if (!argBlockType) {
+                console.error(`Error: Block type for ARG${argIndex} not found.`);
+                argIndex++; // Increment index to check the next argument
+                continue; // Skip this argument if block type is not found
+            }
+
+            // Parse and retrieve the argument value
+            const argBlockValue = this.getBlockValue(argBlock, argBlockType);
+            args.push(argBlockValue); // Add to args array
+            argIndex++; // Move to the next argument index
+        }
+
+        // Format the args into new Object[]{ARG0, ARG1, ARG2, ...}
+        const formattedArgs = args.join(", ");
+        return `new Object[]{${formattedArgs}}`; // Return formatted string
     }
 
 }
@@ -232,6 +284,12 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     outputEditor.setSize(null, 500);
 
+    if (localStorage.getItem('isConditionsReady') === 'true'){
+
+        conditionsCheckboxContainer.style.display = 'block';
+    } else {
+       conditionsCheckboxContainer.style.display = 'none';
+    }
     
 });
 
@@ -301,6 +359,18 @@ function clearOutput() {
     outputEditor.setValue(''); // Clear the output editor
 }
 
+const conditionsCheckboxContainer = document.getElementById('conditionsCheckboxContainer');
+// Monitor local storage changes
+window.addEventListener('storage', function(event) {
+    if (event.key === 'isConditionsReady') {
+        if (localStorage.getItem('isConditionsReady') === 'true'){
+            conditionsCheckboxContainer.style.display = 'flex';
+        } else {
+            conditionsCheckboxContainer.style.display = 'none';
+        }
+        console.log(localStorage.getItem('isConditionsReady'));
+    }
+});
 
 
 
