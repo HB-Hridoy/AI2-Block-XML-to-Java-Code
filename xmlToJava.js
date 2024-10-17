@@ -9,40 +9,40 @@ class AI2XMLParserJAVA_v2 {
         const parser = new DOMParser();
         this.doc = parser.parseFromString(xml, "text/xml");
         this.blockCount = 0; // To keep track of block numbering
+        this.finalResultArray = [];
        
     }
-
     // Main parse function that looks for procedure blocks and starts the parsing process
     parse() {
        
-        // const blocks = this.doc.querySelectorAll('block[type="procedures_defnoreturn"] > statement[name="STACK"] > block');
-        // const blocks = this.doc.querySelectorAll('block[type="procedures_defnoreturn"]:not(:has(statement[name="STACK"] > block))');
-
-        // Select the top-level "procedures_defnoreturn" block
         // Get the first stack inside the 'procedures_defnoreturn' block
-
-        // Locate the procedures_defnoreturn block
         const procedureBlock = this.doc.querySelector('block[type="procedures_defnoreturn"] > statement[name="STACK"]');
 
         // Ensure the procedureBlock exists
         if (!procedureBlock) {
             console.error("No stack found inside procedures_defnoreturn block.");
         } else {
+            
             // Query all direct child blocks from the first STACK found
             const blocks = procedureBlock.querySelectorAll(':scope > block');
             return this.parseBlocks(blocks);
         }
         
     }
-    static finalResult = {};
+    
     // Function to parse multiple blocks
     parseBlocks(blocks) {
-        //const result = {};
+        const result = {};
         blocks.forEach((block) => {
             //console.log(block);
-            this.parseBlockAndNext(block, finalResult);
+            this.parseBlockAndNext(block, result);
         });
-        return finalResult;
+        /*
+        for (let i = 0; i < this.finalResultArray.length; i++) {
+            console.log(this.finalResultArray[i]);
+        }
+        */
+        return this.finalResultArray;
     }
 
     // Recursive function to parse blocks and their 'next' blocks
@@ -51,6 +51,7 @@ class AI2XMLParserJAVA_v2 {
             //console.log(block);
             const blockData = this.parseBlock(block); // Parse a single block
             if (blockData) {
+                this.finalResultArray.push(blockData);
                 this.blockCount++;
                 result[this.blockCount] = blockData;
             }
@@ -70,10 +71,12 @@ class AI2XMLParserJAVA_v2 {
         const component = mutation.getAttribute('instance_name');
         
         // Prepare block data with block type and instance name
+        /*
         const blockData = {
             'block_type': blockType,
             'component': component,
         };
+        */
 
         switch (blockType) {
             case 'component_method': {
@@ -89,11 +92,12 @@ class AI2XMLParserJAVA_v2 {
                 return `SetProperty(GetComponentByName("${component}"), "${propertyName}", ${propertyValue});`;
             }
             case 'local_declaration_statement' : {
-                console.log(JSON.stringify(this.parseLocalVariableDeclaration(block)));
-                return 'LocalVariableSuccess'
+                //console.log(JSON.stringify(this.parseLocalVariableDeclaration(block)));
+                //return 'LocalVariableSuccess'
+                return this.parseLocalVariableDeclaration(block);
             }
             default:
-                return blockData;
+                return blockType;
         }
     }
 
@@ -250,7 +254,7 @@ parseArguments(block) {
     }
 
     parseLocalVariableDeclaration(block){
-        //const result = {};
+        const result = {};
         let index = 0; // Start with VAR0, DECL0
 
         while (true) {
@@ -277,23 +281,26 @@ parseArguments(block) {
 
             // Store the result with numeric keys (1, 2, 3, ...)
             //result[index + 1] = { varName, varType, varValue };
-            this.blockCount++;
-            finalResult[this.blockCount] = `${varType} ${varName} = ${varValue};`;
+            const varDeclare = `${varType} ${varName} = ${varValue};`;
+            result[index + 1] = varDeclare;
+            this.finalResultArray.push(varDeclare);
 
             index++; // Move to the next VAR/DECL index
         }
 
         //return result; // Return the result object
-        const procedureBlock = this.doc.querySelector('statement[name="STACK"]');
+        const stackBlock = block.querySelector('statement[name="STACK"]');
 
-        // Ensure the procedureBlock exists
-        if (!procedureBlock) {
+        // Ensure the stackBlock exists
+        if (!stackBlock) {
             console.error("No stack found inside procedures_defnoreturn block.");
         } else {
             // Query all direct child blocks from the first STACK found
-            const blocks = procedureBlock.querySelectorAll(':scope > block');
+            const blocks = stackBlock.querySelectorAll(':scope > block');
             return this.parseBlocks(blocks);
         }
+
+        
 
     }
 
@@ -507,13 +514,14 @@ document.querySelectorAll('[data-dismiss-target]').forEach(button => {
 // Function to convert XML input to JSON format and display the result
 function convertXmlToJavaV2() {
     const xmlInput = xmlInputEditor.getValue();
-
+    
     try {
         const parser = new AI2XMLParserJAVA_v2(xmlInput); // Create a new AI2XMLParser instance
         const result = parser.parse(); // Parse the XML
 
         outputEditor.setValue('');
 
+        /*
             // Loop through keys from 1 to the maximum number
             for (let i = 1; i <= Object.keys(result).length; i++) {
                 const key = i.toString(); // Convert number to string
@@ -529,7 +537,23 @@ function convertXmlToJavaV2() {
                 
                 //console.log(result[key]);
 
+
             }
+                */
+
+            for (let i = 0; i < result.length; i++) {
+                const key = i.toString(); // Convert number to string
+
+                var cursor = outputEditor.getCursor(); // Get the current cursor position
+                if (conditionsCheckboxstatus){
+                    const resultAfterConditions = ApplyConditions(ApplyConditions(result[key]));
+                    //console.log('Applied Conditions - ' + resultAfterConditions);
+                    outputEditor.replaceRange(resultAfterConditions + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
+                } else {
+                    outputEditor.replaceRange(result[key] + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
+                }
+            }
+            
     
     } catch (error) {
         outputEditor.setValue('Error parsing XML: ' + error.message);// Display error if parsing fails
