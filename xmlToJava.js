@@ -9,26 +9,46 @@ class AI2XMLParserJAVA_v2 {
         const parser = new DOMParser();
         this.doc = parser.parseFromString(xml, "text/xml");
         this.blockCount = 0; // To keep track of block numbering
+       
     }
 
     // Main parse function that looks for procedure blocks and starts the parsing process
     parse() {
-        const blocks = this.doc.querySelectorAll('block[type="procedures_defnoreturn"] > statement[name="STACK"] > block');
-        return this.parseBlocks(blocks);
-    }
+       
+        // const blocks = this.doc.querySelectorAll('block[type="procedures_defnoreturn"] > statement[name="STACK"] > block');
+        // const blocks = this.doc.querySelectorAll('block[type="procedures_defnoreturn"]:not(:has(statement[name="STACK"] > block))');
 
+        // Select the top-level "procedures_defnoreturn" block
+        // Get the first stack inside the 'procedures_defnoreturn' block
+
+        // Locate the procedures_defnoreturn block
+        const procedureBlock = this.doc.querySelector('block[type="procedures_defnoreturn"] > statement[name="STACK"]');
+
+        // Ensure the procedureBlock exists
+        if (!procedureBlock) {
+            console.error("No stack found inside procedures_defnoreturn block.");
+        } else {
+            // Query all direct child blocks from the first STACK found
+            const blocks = procedureBlock.querySelectorAll(':scope > block');
+            return this.parseBlocks(blocks);
+        }
+        
+    }
+    static finalResult = {};
     // Function to parse multiple blocks
     parseBlocks(blocks) {
-        const result = {};
+        //const result = {};
         blocks.forEach((block) => {
-            this.parseBlockAndNext(block, result);
+            //console.log(block);
+            this.parseBlockAndNext(block, finalResult);
         });
-        return result;
+        return finalResult;
     }
 
     // Recursive function to parse blocks and their 'next' blocks
     parseBlockAndNext(block, result) {
         while (block) {
+            //console.log(block);
             const blockData = this.parseBlock(block); // Parse a single block
             if (blockData) {
                 this.blockCount++;
@@ -67,6 +87,10 @@ class AI2XMLParserJAVA_v2 {
                 const propertyValue = this.parseValue(block.querySelector('value[name="VALUE"]'));
                 //console.log('Value - ' + value);
                 return `SetProperty(GetComponentByName("${component}"), "${propertyName}", ${propertyValue});`;
+            }
+            case 'local_declaration_statement' : {
+                console.log(JSON.stringify(this.parseLocalVariableDeclaration(block)));
+                return 'LocalVariableSuccess'
             }
             default:
                 return blockData;
@@ -188,6 +212,9 @@ parseArguments(block) {
             case 'list' : {
                 return 'Make_a_list'
             }
+            case 'local_declaration_statement' : {
+                return 'local_declaration_statement'
+            }
             default:
                 return "No_Block_Value"; // Default return for unhandled block types
         }
@@ -208,17 +235,8 @@ parseArguments(block) {
             case 'component_component_block': {
                 return 'GetComponent';
             }
-            case 'lexical_variable_get': {
-                //const varValue = block.querySelector('field[name="VAR"]').textContent;
-                //return varValue.startsWith('GetComponent_') ? 'GetComponent' : 'undefined variable';
-
-                return 'lexical_variable_get';
-            }
             case 'math_number' : {
                 return 'number';
-            }
-            case 'text' : {
-                return 'text';
             }
             case 'logic_boolean' : {
                 return 'boolean';
@@ -229,6 +247,54 @@ parseArguments(block) {
             default: 
                 return blockType;
         }
+    }
+
+    parseLocalVariableDeclaration(block){
+        //const result = {};
+        let index = 0; // Start with VAR0, DECL0
+
+        while (true) {
+            // Find the VAR field for the current index
+            const varField = block.querySelector(`field[name="VAR${index}"]`);
+            const valueField = block.querySelector(`value[name="DECL${index}"]`);
+
+            // Break the loop if either VAR or DECL is not found
+            if (!varField || !valueField) break;
+
+            const varName = varField.textContent.trim(); // Extract variable name
+
+            // Retrieve the block inside the corresponding DECL value
+            const valueBlock = valueField.querySelector('block');
+            if (!valueBlock) {
+                console.error(`Error: Block not found for DECL${index}.`);
+                index++;
+                continue; // Skip to the next iteration if no block is found
+            }
+
+            const varType = valueBlock.getAttribute('type'); // Extract block type
+            const varValueType = this.getBlockType(valueBlock);
+            const varValue = this.getBlockValue(valueBlock, varValueType); // Extract the full block HTML
+
+            // Store the result with numeric keys (1, 2, 3, ...)
+            //result[index + 1] = { varName, varType, varValue };
+            this.blockCount++;
+            finalResult[this.blockCount] = `${varType} ${varName} = ${varValue};`;
+
+            index++; // Move to the next VAR/DECL index
+        }
+
+        //return result; // Return the result object
+        const procedureBlock = this.doc.querySelector('statement[name="STACK"]');
+
+        // Ensure the procedureBlock exists
+        if (!procedureBlock) {
+            console.error("No stack found inside procedures_defnoreturn block.");
+        } else {
+            // Query all direct child blocks from the first STACK found
+            const blocks = procedureBlock.querySelectorAll(':scope > block');
+            return this.parseBlocks(blocks);
+        }
+
     }
 
     // Function to parse join block
