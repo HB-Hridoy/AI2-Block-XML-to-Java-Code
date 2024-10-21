@@ -1,6 +1,6 @@
 // Class for parsing AI2 XML and converting it into JSON
 
-class AI2XMLParserJAVA_v2 {
+class AI2XMLParserJAVA_v3 {
     constructor(xml) {
         // DOMParser to parse XML from the string
         const parser = new DOMParser();
@@ -8,113 +8,130 @@ class AI2XMLParserJAVA_v2 {
         this.finalResultArray = [];
        
     }
+    // Main parse function that looks for procedure blocks and starts the parsing process
     parse() {
-        const procedureStackBlock = this.doc.querySelector(
-            'block[type="procedures_defnoreturn"] > statement[name="STACK"] > block'
-        );
+       
+        // Get the first stack inside the 'procedures_defnoreturn' block
+        const procedureBlock = this.doc.querySelector('block[type="procedures_defnoreturn"] > statement[name="STACK"]');
 
-        if (!procedureStackBlock) {
+        // Ensure the procedureBlock exists
+        if (!procedureBlock) {
             console.error("No stack found inside procedures_defnoreturn block.");
-            return [];
+        } else {
+            
+            // Query all direct child blocks from the first STACK found
+            const blocks = procedureBlock.querySelectorAll(':scope > block');
+            return this.parseBlocks(blocks);
         }
-        this.parseRecursive(procedureStackBlock)
         
-        return this.finalResultArray;
     }
     
-   // Recursive function to parse a block and its "next" siblings
-   parseRecursive(block) {
+    // Function to parse multiple blocks
+    parseBlocks(blocks) {
+        const result = {};
+        blocks.forEach((block) => {
+            //console.log(block);
+            this.parseBlockAndNext(block, result);
+        });
+        /*
+        for (let i = 0; i < this.finalResultArray.length; i++) {
+            console.log(this.finalResultArray[i]);
+        }
+        */
+        //return this.finalResultArray;
+        return result;
+    }
+
+    // Recursive function to parse blocks and their 'next' blocks
+    parseBlockAndNext(block, result) {
         while (block) {
-            
+            //console.log(block);
             const blockData = this.parseBlock(block); // Parse a single block
             if (blockData) {
-                //this.finalResultArray.push(this.removeExtraSpaces(blockData));
+                console.log(blockData);
                 this.finalResultArray.push(blockData);
+                this.blockCount++;
+                result[this.blockCount] = blockData;
             }
             
-            // Get the immediate <next> element (only direct child)
-            const nextElement = block.querySelector(':scope > next');
-
-            // If <next> exists, get the <block> inside it, otherwise log an error message
-            if (nextElement) {
-                block = nextElement.querySelector(':scope > block');
-            } else {
-                console.log(`Task Complete. Blocks Generated - ${this.finalResultArray.length}`);
-                block = null;
-            }
-
+            // Get the next block and continue parsing
+            const nextElement = block.querySelector('next');
+            block = nextElement ? nextElement.querySelector('block') : null;
         }
     }
 
-    
-    // Parse a single block and handle it based on type.
+    // Parse a single block and extract relevant data based on type
     parseBlock(block) {
-
         const mutation = block.querySelector('mutation');
-        if (!mutation) return "/* Skipped: No mutation */";
+        if (!mutation) return null; // Skip block if no mutation
 
         const blockType = this.getBlockType(block);
-        const component = mutation.getAttribute('instance_name') || "unknown_component";
+        const component = mutation.getAttribute('instance_name');
+        
+        // Prepare block data with block type and instance name
+        /*
+        const blockData = {
+            'block_type': blockType,
+            'component': component,
+        };
+        */
 
         switch (blockType) {
             case 'component_method': {
-                const methodName = mutation.getAttribute('method_name').trim();
-                const args = this.parseArguments(block);
+                const methodName = mutation.getAttribute('method_name');
+                let args = '';
+                args = this.parseArguments(block); // Parse arguments
                 return `Invoke(GetComponentByName("${component}"), "${methodName}", ${args});`;
             }
             case 'SetProperty': {
-                const propertyName = block.querySelector('field[name="PROP"]').textContent.trim();
+                const propertyName = block.querySelector('field[name="PROP"]').textContent;
                 const propertyValue = this.parseValue(block.querySelector('value[name="VALUE"]'));
+                //console.log('Value - ' + value);
                 return `SetProperty(GetComponentByName("${component}"), "${propertyName}", ${propertyValue});`;
             }
             case 'local_declaration_statement' : {
+                //console.log(JSON.stringify(this.parseLocalVariableDeclaration(block)));
+                //return 'LocalVariableSuccess'
                 return this.parseLocalVariableDeclaration(block);
-                //return 'Local Var Success';
             }
             default:
-                return `/* Unhandled block type: ${blockType} */`;
+                return blockType;
         }
-
     }
 
-        
-    
 
+// Function to parse arguments from the block
+parseArguments(block) {
+    const args = [];
+    let argIndex = 0; // Start with the first argument index
 
-    // Function to parse arguments from the block
-    parseArguments(block) {
-        const args = []; // Array to store argument values
+    // Loop through ARG indices
+    while (true) {
+        // Use a more general selector and then filter for direct children
+        const argField = Array.from(block.children).find(child => child.getAttribute('name') === `ARG${argIndex}`);
+        if (!argField) break; // Exit loop if ARG not found
 
-        // Iterate through all possible argument fields (ARG0, ARG1, ARG2, ...)
-        for (let argIndex = 0; ; argIndex++) {
-            // Find the direct child <value> element with the corresponding ARG name
-            const argField = block.querySelector(`:scope > value[name="ARG${argIndex}"]`);
-            if (!argField) break; // Exit loop if no more ARG fields are found
+        const argBlock = argField.querySelector('block'); // Check for the child block
+        if (!argBlock) break; // Exit loop if argBlock not found
 
-            // Retrieve the block inside the <value> element
-            const argBlock = argField.querySelector(':scope > block');
-            if (!argBlock) {
-                console.warn(`Warning: Missing block for ARG${argIndex}`);
-                continue; // Skip this argument if no block is found
-            }
-
-            // Get the block type and value for the argument
-            const argBlockType = this.getBlockType(argBlock);
-            if (!argBlockType) {
-                console.error(`Error: Block type for ARG${argIndex} not found.`);
-                continue; // Skip this argument if block type is not found
-            }
-
-            const argBlockValue = this.getBlockValue(argBlock, argBlockType);
-            args.push(argBlockValue); // Add argument value to the array
+        // Get the block type for the argument
+        const argBlockType = this.getBlockType(argBlock);
+        if (!argBlockType) {
+            console.error(`Error: Block type for ARG${argIndex} not found.`);
+            argIndex++; // Increment index to check the next argument
+            continue; // Skip this argument if block type is not found
         }
 
-        // Format the arguments into a string: new Object[]{ARG0, ARG1, ...}
-        const formattedArgs = args.length ? args.join(", ") : ''; // Handle empty case
-        console.log(`new Object[]{${formattedArgs}}`);
-        return `new Object[]{${formattedArgs}}`; // Return the formatted string
+        // Parse and retrieve the argument value
+        const argBlockValue = this.getBlockValue(argBlock, argBlockType);
+        args.push(argBlockValue); // Add to args array
+        argIndex++; // Move to the next argument index
     }
 
+    // Format the args into new Object[]{ARG0, ARG1, ARG2, ...}
+    const formattedArgs = args.join(", ");
+    return `new Object[]{${formattedArgs}}`; // Return formatted string
+}
 
 
     // Parse value elements within blocks
@@ -130,60 +147,80 @@ class AI2XMLParserJAVA_v2 {
         return blockValue;
     }
 
-// Extract value from a block (handles different types)
-getBlockValue(block, blockType) {
-    if (!blockType) {
-        return "getBlockValue - No block type found";
+
+    // Extract value from a block (handles different types)
+    getBlockValue(block, blockType) {
+
+        if (!blockType) {
+            return "getBlockValue - No block type found"; // Handle missing block type
+        }
+        //console.log(blockType);
+        //console.log(block);
+        
+        switch (blockType) {
+            case 'text': {
+                const textValue = block.querySelector('field[name="TEXT"]').textContent;
+                return `"${textValue}"`;
+            }
+            case 'GetComponent': {
+                const blockMutation = block.querySelector('mutation');
+                //console.log(blockMutation);
+                const componentName = blockMutation.getAttribute('instance_name');
+                //const componentName = block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
+                return `GetComponentByName("${componentName}")`
+            }
+            case 'GetProperty' : {
+                const blockMutation = block.querySelector('mutation');
+                const componentName = blockMutation.getAttribute('instance_name');
+                const propertyName = blockMutation.getAttribute('property_name');
+                //const blockComponent = block.querySelector('field[name="COMPONENT_SELECTOR"]').textContent;
+                //const blockProperty = block.querySelector('field[name="PROP"]').textContent;
+                if (!blockMutation) return null; // Return null if mutation is missing
+
+                 return `GetProperty(GetComponentByName("${componentName}"), "${propertyName}")`;
+            }
+            case 'component_method': {
+                //console.log(this.parseBlock(block));
+                return this.parseBlock(block); // Delegate to parseBlock for method blocks
+
+            }
+            case 'number' : {
+                const numStr = block.querySelector('field[name="NUM"]').textContent;
+                const num = parseInt(numStr, 10);
+                return isNaN(num) ? 0 : num;
+                        
+            }
+            case 'boolean' : {
+                return block.querySelector('field[name="BOOL"]').textContent.toLowerCase();
+                
+            }
+            case 'lexical_variable_get' : {
+                const varValue = block.querySelector('field[name="VAR"]').textContent;
+                if (varValue.startsWith('GetComponent_')){
+                    const componentName =  varValue.replace('GetComponent_', '');
+                    return `GetComponentByName("${componentName}")`
+                } else if (varValue.startsWith('param_')){
+                    const paramIndex = varValue.split("_")[1];
+                    return `paramValues.get(${paramIndex})`
+                }  else if (varValue.startsWith('GetVar_')){
+                    return varValue.replace('GetVar_', '');
+                }
+                else {
+                    //return varValue.startsWith('GetComponent_') ? 'GetComponent' : 'undefined variable';
+                return 'unknown_variable_type'
+                }
+                
+            }
+            case 'list' : {
+                return 'Make_a_list'
+            }
+            case 'local_declaration_statement' : {
+                return 'local_declaration_statement'
+            }
+            default:
+                return "No_Block_Value"; // Default return for unhandled block types
+        }
     }
-
-    switch (blockType) {
-        case 'text': {
-            const textValue = block.querySelector('field[name="TEXT"]').textContent.trim(); // trim to remove extra spaces
-            return `"${textValue}"`;
-        }
-        case 'GetComponent': {
-            const blockMutation = block.querySelector('mutation');
-            const componentName = blockMutation.getAttribute('instance_name').trim();
-            return `GetComponentByName("${componentName}")`;
-        }
-        case 'GetProperty': {
-            const blockMutation = block.querySelector('mutation');
-            const componentName = blockMutation.getAttribute('instance_name').trim();
-            const propertyName = blockMutation.getAttribute('property_name').trim();
-            if (!blockMutation) return null;
-
-            return `GetProperty(GetComponentByName("${componentName}"), "${propertyName}")`;
-        }
-        case 'component_method': {
-            return this.parseBlock(block);
-        }
-        case 'number': {
-            const numStr = block.querySelector('field[name="NUM"]').textContent.trim();
-            const num = parseInt(numStr, 10);
-            return isNaN(num) ? 0 : num;
-        }
-        case 'boolean': {
-            return block.querySelector('field[name="BOOL"]').textContent.trim().toLowerCase();
-        }
-        case 'lexical_variable_get': {
-            const varValue = block.querySelector('field[name="VAR"]').textContent.trim();
-            if (varValue.startsWith('param_')) {
-                const paramIndex = varValue.split("_")[1];
-                return `paramValues.get(${paramIndex})`;
-            } 
-            return varValue;
-        }
-        case 'list': {
-            return 'Make_a_list';
-        }
-        case 'local_declaration_statement': {
-            return 'local_declaration_statement';
-        }
-        default:
-            return "No_Block_Value";
-    }
-}
-
 
 
     getBlockType(block) {
@@ -215,9 +252,7 @@ getBlockValue(block, blockType) {
     }
 
     parseLocalVariableDeclaration(block){
-        
-        let sectionName = "";
-        let nestedBlockCount = 0;
+        const result = {};
         let index = 0; // Start with VAR0, DECL0
 
         while (true) {
@@ -226,18 +261,10 @@ getBlockValue(block, blockType) {
             const valueField = block.querySelector(`value[name="DECL${index}"]`);
 
             // Break the loop if either VAR or DECL is not found
-            if (!varField || !valueField){
-                this.finalResultArray.push(' ');
-                break;
-            } 
+            if (!varField || !valueField) break;
 
             const varName = varField.textContent.trim(); // Extract variable name
 
-            if (index === 0){
-                sectionName = varName;
-                this.finalResultArray.push(' ');
-                this.finalResultArray.push(`// ${sectionName} started`);
-            }
             // Retrieve the block inside the corresponding DECL value
             const valueBlock = valueField.querySelector('block');
             if (!valueBlock) {
@@ -250,46 +277,28 @@ getBlockValue(block, blockType) {
             const varValueType = this.getBlockType(valueBlock);
             const varValue = this.getBlockValue(valueBlock, varValueType); // Extract the full block HTML
 
+            // Store the result with numeric keys (1, 2, 3, ...)
+            //result[index + 1] = { varName, varType, varValue };
             const varDeclare = `${varType} ${varName} = ${varValue};`;
-            //this.finalResultArray.push(this.removeExtraSpaces(varDeclare));
+            result[index + 1] = varDeclare;
             this.finalResultArray.push(varDeclare);
 
             index++; // Move to the next VAR/DECL index
         }
 
-        //console.log(varDeclarations);
-        const stackBlock = block.querySelector('statement[name="STACK"] > block');
-        let nestedBlock = stackBlock;
-        
+        //return result; // Return the result object
+        const stackBlock = block.querySelector('statement[name="STACK"]');
+
+        // Ensure the stackBlock exists
         if (!stackBlock) {
-            console.error("No stack found inside local_declaration_statement block.");
-            return '/* Empty local variable declaration */';
+            console.error("No stack found inside procedures_defnoreturn block.");
+        } else {
+            // Query all direct child blocks from the first STACK found
+            const blocks = stackBlock.querySelectorAll(':scope > block');
+            return this.parseBlocks(blocks);
         }
 
-        while (nestedBlock) {
-            
-            const blockData = this.parseBlock(nestedBlock); // Parse a single block
-            if (blockData) {
-                //this.finalResultArray.push(this.removeExtraSpaces(blockData));
-                this.finalResultArray.push(blockData);
-                nestedBlockCount++;
-            }
-            
-            // Get the immediate <next> element (only direct child)
-            const nextElement = nestedBlock.querySelector(':scope > next');
-
-            // If <next> exists, get the <block> inside it, otherwise log an error message
-            if (nextElement) {
-                nestedBlock = nextElement.querySelector(':scope > block');
-            } else {
-                console.log(`Local Variable Blocks Generated - ${nestedBlockCount}`);
-                nestedBlock = null;
-            }
-
-        }
-
-        return `// ${sectionName} ended`;
-    
+        
 
     }
 
@@ -324,11 +333,6 @@ getBlockValue(block, blockType) {
         // Format the args into new Object[]{ARG0, ARG1, ARG2, ...}
         const formattedArgs = args.join(", ");
         return `new Object[]{${formattedArgs}}`; // Return formatted string
-    }
-
-    // Modify removeExtraSpaces to preserve newlines
-    removeExtraSpaces(input) {
-        return input.replace(/\s+/g, '').trim();
     }
 
 }
@@ -506,34 +510,14 @@ document.querySelectorAll('[data-dismiss-target]').forEach(button => {
 
 
 // Function to convert XML input to JSON format and display the result
-function convertXmlToJavaV2() {
+function convertXmlToJavaV3() {
     const xmlInput = xmlInputEditor.getValue();
     
     try {
-        const parser = new AI2XMLParserJAVA_v2(xmlInput); // Create a new AI2XMLParser instance
+        const parser = new AI2XMLParserJAVA_v3(xmlInput); // Create a new AI2XMLParser instance
         const result = parser.parse(); // Parse the XML
 
         outputEditor.setValue('');
-        //console.log(result);
-/*
-            // Loop through keys from 1 to the maximum number
-            for (let i = 1; i <= Object.keys(result).length; i++) {
-                const key = i.toString(); // Convert number to string
-
-                var cursor = outputEditor.getCursor(); // Get the current cursor position
-                if (conditionsCheckboxstatus){
-                    const resultAfterConditions = ApplyConditions(ApplyConditions(result[key]));
-                    //console.log('Applied Conditions - ' + resultAfterConditions);
-                    outputEditor.replaceRange(resultAfterConditions + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
-                } else {
-                    outputEditor.replaceRange(result[key] + '\n', { line: cursor.line + 1, ch: 0 }); // Insert a new line
-                }
-                
-                //console.log(result[key]);
-
-
-            }*/
-
             for (let i = 0; i < result.length; i++) {
                 const key = i.toString(); // Convert number to string
 
