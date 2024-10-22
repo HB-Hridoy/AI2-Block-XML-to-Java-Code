@@ -6,6 +6,7 @@ class AI2XMLParserJAVA_v2 {
         const parser = new DOMParser();
         this.doc = parser.parseFromString(xml, "text/xml");
         this.finalResultArray = [];
+        
        
     }
     parse() {
@@ -25,8 +26,8 @@ class AI2XMLParserJAVA_v2 {
    // Recursive function to parse a block and its "next" siblings
    parseRecursive(block) {
         while (block) {
-            
-            const blockData = this.parseBlock(block); // Parse a single block
+
+            const blockData = this.parseBlock(block, true); // Parse a single block
             if (blockData) {
                 this.finalResultArray.push(blockData);
             }
@@ -47,7 +48,7 @@ class AI2XMLParserJAVA_v2 {
 
     
     // Parse a single block and handle it based on type.
-    parseBlock(block) {
+    parseBlock(block, isIndepended) {
 
         const mutation = block.querySelector('mutation');
         if (!mutation) return "/* Skipped: No mutation */";
@@ -59,12 +60,18 @@ class AI2XMLParserJAVA_v2 {
             case 'component_method': {
                 const methodName = mutation.getAttribute('method_name').trim();
                 const args = this.parseArguments(block);
-                return `Invoke( GetComponentByName("${component}"), "${methodName}", ${args} );`;
+                
+                if (isIndepended){
+                    return `Invoke(GetComponentByName("${component}"), "${methodName}", ${args});`;
+                } else {
+                    return `Invoke(GetComponentByName("${component}"), "${methodName}", ${args})`;
+                }
+                
             }
             case 'SetProperty': {
                 const propertyName = block.querySelector('field[name="PROP"]').textContent.trim();
                 const propertyValue = this.parseValue(block.querySelector('value[name="VALUE"]'));
-                return `SetProperty( GetComponentByName("${component}"), "${propertyName}", ${propertyValue} );`;
+                return `SetProperty(GetComponentByName("${component}"), "${propertyName}", ${propertyValue});`;
             }
             case 'local_declaration_statement' : {
                 return this.parseLocalVariableDeclaration(block);
@@ -78,7 +85,8 @@ class AI2XMLParserJAVA_v2 {
                 return `${varName} = ${varValue}`;
             }
             case 'controls_forRange' : {
-                
+                this.parseForLoop(block);
+                return `// for loop ends`;
             }
             default:
                 return `/* Unhandled block type: ${blockType} */`;
@@ -133,69 +141,70 @@ class AI2XMLParserJAVA_v2 {
         if (!block) return null;
 
         const blockType = this.getBlockType(block);
+
         const blockValue = this.getBlockValue(block, blockType);
         
         return blockValue;
     }
 
-// Extract value from a block (handles different types)
-getBlockValue(block, blockType) {
-    if (!blockType) {
-        return "getBlockValue - No block type found";
-    }
+    // Extract value from a block (handles different types)
+    getBlockValue(block, blockType) {
+        if (!blockType) {
+            return "getBlockValue - No block type found";
+        }
 
-    switch (blockType) {
-        case 'text': {
-            const textValue = block.querySelector('field[name="TEXT"]').textContent.trim(); // trim to remove extra spaces
-            return `"${textValue}"`;
-        }
-        case 'GetComponent': {
-            const blockMutation = block.querySelector('mutation');
-            const componentName = blockMutation.getAttribute('instance_name').trim();
-            return `GetComponentByName("${componentName}")`;
-        }
-        case 'GetProperty': {
-            const blockMutation = block.querySelector('mutation');
-            const componentName = blockMutation.getAttribute('instance_name').trim();
-            const propertyName = blockMutation.getAttribute('property_name').trim();
-            if (!blockMutation) return null;
-
-            return `GetProperty(GetComponentByName("${componentName}"), "${propertyName}")`;
-        }
-        case 'component_method': {
-            return this.parseBlock(block);
-        }
-        case 'number': {
-            const numStr = block.querySelector('field[name="NUM"]').textContent.trim();
-            const num = parseInt(numStr, 10);
-            return isNaN(num) ? 0 : num;
-        }
-        case 'boolean': {
-            return block.querySelector('field[name="BOOL"]').textContent.trim().toLowerCase();
-        }
-        case 'lexical_variable_get': {
-            const varValue = block.querySelector('field[name="VAR"]').textContent.trim();
-            if (varValue.startsWith('param_')) {
-                const paramIndex = varValue.split("_")[1];
-                return `paramValues.get(${paramIndex})`;
-            } else if (varValue.startsWith('global ')) {
-                return varValue.replace(/^global\s+/, '');
+        switch (blockType) {
+            case 'text': {
+                const textValue = block.querySelector('field[name="TEXT"]').textContent.trim(); // trim to remove extra spaces
+                return `"${textValue}"`;
             }
-            return varValue;
+            case 'GetComponent': {
+                const blockMutation = block.querySelector('mutation');
+                const componentName = blockMutation.getAttribute('instance_name').trim();
+                return `GetComponentByName("${componentName}")`;
+            }
+            case 'GetProperty': {
+                const blockMutation = block.querySelector('mutation');
+                const componentName = blockMutation.getAttribute('instance_name').trim();
+                const propertyName = blockMutation.getAttribute('property_name').trim();
+                if (!blockMutation) return null;
+
+                return `GetProperty(GetComponentByName("${componentName}"), "${propertyName}")`;
+            }
+            case 'component_method': {
+                return this.parseBlock(block, false);
+            }
+            case 'number': {
+                const numStr = block.querySelector('field[name="NUM"]').textContent.trim();
+                const num = parseInt(numStr, 10);
+                return isNaN(num) ? 0 : num;
+            }
+            case 'boolean': {
+                return block.querySelector('field[name="BOOL"]').textContent.trim().toLowerCase();
+            }
+            case 'lexical_variable_get': {
+                const varValue = block.querySelector('field[name="VAR"]').textContent.trim();
+                if (varValue.startsWith('param_')) {
+                    const paramIndex = varValue.split("_")[1];
+                    return `paramValues.get(${paramIndex})`;
+                } else if (varValue.startsWith('global ')) {
+                    return varValue.replace(/^global\s+/, '');
+                }
+                return varValue;
+            }
+            case 'list': {
+                return this.parseList(block);
+            }
+            case 'local_declaration_statement': {
+                return 'local_declaration_statement';
+            }
+            case 'text_join' : {
+                return this.parseJoinArguments(block);
+            }
+            default:
+                return "No_Block_Value";
         }
-        case 'list': {
-            return 'Make_a_list';
-        }
-        case 'local_declaration_statement': {
-            return 'local_declaration_statement';
-        }
-        case 'text_join' : {
-            return this.parseJoinArguments(block);
-        }
-        default:
-            return "No_Block_Value";
     }
-}
 
 
 
@@ -304,8 +313,8 @@ getBlockValue(block, blockType) {
         }
 
         while (nestedBlock) {
-            
-            const blockData = this.parseBlock(nestedBlock); // Parse a single block
+
+            const blockData = this.parseBlock(nestedBlock, true); // Parse a single block
             if (blockData) {
                 this.finalResultArray.push(blockData);
                 nestedBlockCount++;
@@ -365,15 +374,115 @@ getBlockValue(block, blockType) {
         return joinValues.join(" + ");
     }
 
-    parseForLoop(block){
-        const indexName = '';
-        const start = 0;
-        const end = 5;
-        const step = 1;
+    // Function to parse a list of arguments from the block
+    parseList(block) {
+        const list = []; // Array to store argument values
 
-        //Adds the first line of for loop
-        this.finalResultArray(`for (int ${indexName} = ${start}; ${indexName} <= ${end}; ${indexName} += ${step}) {`);
+        // Iterate through all possible argument fields (ADD0, ADD1, ADD2, ...)
+        for (let index = 0; ; index++) {
+            // Find the direct child <value> element with the corresponding ADD name
+            const valueField = block.querySelector(`:scope > value[name="ADD${index}"]`);
+            if (!valueField) break; // Exit loop if no more ADD fields are found
 
+            // Retrieve the block inside the <value> element
+            const valueBlock = valueField.querySelector(':scope > block');
+            if (!valueBlock) {
+                console.warn(`Warning: Missing block for ADD${index}`);
+                continue; // Skip if no block is found
+            }
+
+            // Get the block type and value for the argument
+            const valueBlockType = this.getBlockType(valueBlock);
+            if (!valueBlockType) {
+                console.error(`Error: Block type for ADD${index} not found.`);
+                continue; // Skip if block type is not found
+            }
+
+            const valueBlockValue = this.getBlockValue(valueBlock, valueBlockType);
+            list.push(valueBlockValue); // Add value to the list
+        }
+
+        // Format the list into a string: new Object[]{ADD0, ADD1, ...}
+        const formattedList = list.length ? list.join(", ") : ''; // Handle empty case
+        return `YailList.makeList(new Object[]{${formattedList}})`; // Return the formatted string
+    }
+
+
+    parseForLoop(forLoopBlock){
+
+        let nestedBlockCount = 0;
+
+        if (forLoopBlock) {
+            // Get the VAR field value
+            const varField = forLoopBlock.querySelector('field[name="VAR"]');
+            const indexName = varField ? varField.textContent : 'indexNameNotFound';
+        
+            // Get the START value
+            const startValueBlock = forLoopBlock.querySelector('value[name="START"]');
+            const start = startValueBlock ? this.parseValue(startValueBlock) : 0;
+        
+            // Get the END value
+            const endValueBlock = forLoopBlock.querySelector('value[name="END"]');
+            const end = endValueBlock ? this.parseValue(endValueBlock) : 0;
+        
+            // Get the STEP value
+            const stepValueBlock = forLoopBlock.querySelector('value[name="STEP"]');
+            const step = stepValueBlock ? this.parseValue(stepValueBlock) : 0;
+
+            //Adds the first line of for loop
+            this.finalResultArray.push(' ');
+            this.finalResultArray.push('// For Loop Starts');
+            this.finalResultArray.push(`for (int ${indexName} = ${start}; ${indexName} <= ${end}; ${indexName} += ${step}) {`);
+            this.finalResultArray.push(' ');
+        
+            /* console.log(`VAR: ${indexName}`);
+            console.log(`START: ${start}`);
+            console.log(`END: ${end}`);
+            console.log(`STEP: ${step}`); */
+
+            // Select the <statement> element with the name "DO"
+            const doStatement = forLoopBlock.querySelector('statement[name="DO"]');
+
+            if (doStatement) {
+                // Get the <block> inside the <statement>
+                const innerBlock = doStatement.querySelector('block');
+                let nestedBlock = innerBlock;
+        
+                if (!innerBlock) {
+                    console.error("No block found inside For Loop block.");
+                    return '/* Empty For Loop Block */';
+                }
+        
+                while (nestedBlock) {
+
+                    const blockData = this.parseBlock(nestedBlock, true); // Parse a single block
+                    if (blockData) {
+                        this.finalResultArray.push(`    ${blockData}`);
+                        nestedBlockCount++;
+                    }
+                    
+                    // Get the immediate <next> element (only direct child)
+                    const nextElement = nestedBlock.querySelector(':scope > next');
+        
+                    // If <next> exists, get the <block> inside it, otherwise log an error message
+                    if (nextElement) {
+                        nestedBlock = nextElement.querySelector(':scope > block');
+                    } else {
+                        // Ends the for loop
+                        this.finalResultArray.push(' ');
+                        this.finalResultArray.push('}');
+                        console.log(`For Loop Blocks Generated - ${nestedBlockCount}`);
+                        nestedBlock = null;
+                    }
+        
+                }
+                
+            } else {
+                console.error('No <statement name="DO"> found in the For Loop block.');
+            }
+        } else {
+            console.error("No 'controls_forRange' block found.");
+        }
         
     }
 
