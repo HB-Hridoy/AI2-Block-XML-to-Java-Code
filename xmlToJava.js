@@ -28,7 +28,6 @@ class AI2XMLParserJAVA_v2 {
             
             const blockData = this.parseBlock(block); // Parse a single block
             if (blockData) {
-                //this.finalResultArray.push(this.removeExtraSpaces(blockData));
                 this.finalResultArray.push(blockData);
             }
             
@@ -60,16 +59,26 @@ class AI2XMLParserJAVA_v2 {
             case 'component_method': {
                 const methodName = mutation.getAttribute('method_name').trim();
                 const args = this.parseArguments(block);
-                return `Invoke(GetComponentByName("${component}"), "${methodName}", ${args});`;
+                return `Invoke( GetComponentByName("${component}"), "${methodName}", ${args} );`;
             }
             case 'SetProperty': {
                 const propertyName = block.querySelector('field[name="PROP"]').textContent.trim();
                 const propertyValue = this.parseValue(block.querySelector('value[name="VALUE"]'));
-                return `SetProperty(GetComponentByName("${component}"), "${propertyName}", ${propertyValue});`;
+                return `SetProperty( GetComponentByName("${component}"), "${propertyName}", ${propertyValue} );`;
             }
             case 'local_declaration_statement' : {
                 return this.parseLocalVariableDeclaration(block);
-                //return 'Local Var Success';
+            }
+            case 'lexical_variable_set' : {
+                let varName = block.querySelector('field[name="VAR"]').textContent.trim();
+                const varValue = this.parseValue(block.querySelector('value[name="VALUE"]'));
+                if (varName.startsWith('global ')) {
+                   varName =  varName.replace(/^global\s+/, '');
+                }
+                return `${varName} = ${varValue}`;
+            }
+            case 'controls_forRange' : {
+                
             }
             default:
                 return `/* Unhandled block type: ${blockType} */`;
@@ -111,7 +120,6 @@ class AI2XMLParserJAVA_v2 {
 
         // Format the arguments into a string: new Object[]{ARG0, ARG1, ...}
         const formattedArgs = args.length ? args.join(", ") : ''; // Handle empty case
-        console.log(`new Object[]{${formattedArgs}}`);
         return `new Object[]{${formattedArgs}}`; // Return the formatted string
     }
 
@@ -170,7 +178,9 @@ getBlockValue(block, blockType) {
             if (varValue.startsWith('param_')) {
                 const paramIndex = varValue.split("_")[1];
                 return `paramValues.get(${paramIndex})`;
-            } 
+            } else if (varValue.startsWith('global ')) {
+                return varValue.replace(/^global\s+/, '');
+            }
             return varValue;
         }
         case 'list': {
@@ -178,6 +188,9 @@ getBlockValue(block, blockType) {
         }
         case 'local_declaration_statement': {
             return 'local_declaration_statement';
+        }
+        case 'text_join' : {
+            return this.parseJoinArguments(block);
         }
         default:
             return "No_Block_Value";
@@ -247,11 +260,35 @@ getBlockValue(block, blockType) {
             }
 
             const varType = valueBlock.getAttribute('type'); // Extract block type
+            let formattedVarType = '';
+            switch (varType){
+                case 'text' :{
+                    formattedVarType =  'String';
+                    break;
+                }
+                case 'component_component_block' : {
+                    formattedVarType =  'Object';
+                    break;
+                }
+                case 'number' : {
+                    formattedVarType =  'int';
+                    break;
+                }
+                case 'boolean ' : {
+                    formattedVarType = 'boolean';
+                    break;
+                }
+                case 'lexical_variable_get' : {
+                    formattedVarType = 'Object';
+                    break;
+                }
+                default:
+                    formattedVarType = 'Object';
+            }
             const varValueType = this.getBlockType(valueBlock);
             const varValue = this.getBlockValue(valueBlock, varValueType); // Extract the full block HTML
 
-            const varDeclare = `${varType} ${varName} = ${varValue};`;
-            //this.finalResultArray.push(this.removeExtraSpaces(varDeclare));
+            const varDeclare = `${formattedVarType} ${varName} = ${varValue};`;
             this.finalResultArray.push(varDeclare);
 
             index++; // Move to the next VAR/DECL index
@@ -270,7 +307,6 @@ getBlockValue(block, blockType) {
             
             const blockData = this.parseBlock(nestedBlock); // Parse a single block
             if (blockData) {
-                //this.finalResultArray.push(this.removeExtraSpaces(blockData));
                 this.finalResultArray.push(blockData);
                 nestedBlockCount++;
             }
@@ -293,42 +329,52 @@ getBlockValue(block, blockType) {
 
     }
 
-    // Function to parse join block
-    parseJoinBlock(block) {
-        const jBlocks = [];
-        let joinIndex = 0; // Start with the first argument index
+    // Function to parse 'join' block (concatenates arguments)
+    parseJoinArguments(block) {
+        const joinValues = [];
+        let joinIndex = 0; // Start with the first join index
 
-        // Loop through ARG indices
+        // Loop through ADD indices to collect joinable blocks
         while (true) {
-            // Use a more general selector and then filter for direct children
-            const joinField = Array.from(block.children).find(child => child.getAttribute('name') === `ADD${argIndex}`);
-            if (!joinField) break; // Exit loop if ARG not found
+            // Find the ADD field with the current joinIndex
+            const joinField = Array.from(block.children).find(
+                child => child.getAttribute('name') === `ADD${joinIndex}`
+            );
+            if (!joinField) break; // Exit loop if no more ADD fields are found
 
-            const argBlock = argField.querySelector('block'); // Check for the child block
-            if (!argBlock) break; // Exit loop if argBlock not found
+            // Check for a nested block within the ADD field
+            const joinBlock = joinField.querySelector('block');
+            if (!joinBlock) break; // Exit if no nested block found
 
-            // Get the block type for the argument
-            const argBlockType = this.getBlockType(argBlock);
-            if (!argBlockType) {
-                console.error(`Error: Block type for ARG${argIndex} not found.`);
-                argIndex++; // Increment index to check the next argument
-                continue; // Skip this argument if block type is not found
+            // Get the block type for the join argument
+            const joinBlockType = this.getBlockType(joinBlock);
+            if (!joinBlockType) {
+                console.error(`Error: Block type for ADD${joinIndex} not found.`);
+                joinIndex++; // Move to the next ADD index
+                continue; // Skip this iteration if block type is not found
             }
 
-            // Parse and retrieve the argument value
-            const argBlockValue = this.getBlockValue(argBlock, argBlockType);
-            args.push(argBlockValue); // Add to args array
-            argIndex++; // Move to the next argument index
+            // Parse and retrieve the join value
+            const joinBlockValue = this.getBlockValue(joinBlock, joinBlockType);
+            joinValues.push(joinBlockValue); // Add the value to joinValues array
+
+            joinIndex++; // Move to the next ADD index
         }
 
-        // Format the args into new Object[]{ARG0, ARG1, ARG2, ...}
-        const formattedArgs = args.join(", ");
-        return `new Object[]{${formattedArgs}}`; // Return formatted string
+        // Concatenate the join values using ' + ' (for string concatenation)
+        return joinValues.join(" + ");
     }
 
-    // Modify removeExtraSpaces to preserve newlines
-    removeExtraSpaces(input) {
-        return input.replace(/\s+/g, '').trim();
+    parseForLoop(block){
+        const indexName = '';
+        const start = 0;
+        const end = 5;
+        const step = 1;
+
+        //Adds the first line of for loop
+        this.finalResultArray(`for (int ${indexName} = ${start}; ${indexName} <= ${end}; ${indexName} += ${step}) {`);
+
+        
     }
 
 }
