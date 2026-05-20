@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>AI2 XML → Java Compiler</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-white p-6">
+
+    <div class="max-w-5xl mx-auto">
+
+        <!-- Header -->
+        <h1 class="text-2xl font-bold mb-4">
+            AI2 Block XML → Java Compiler
+        </h1>
+
+        <!-- Input -->
+        <div class="mb-4">
+            <label class="block mb-2 text-sm text-slate-300">XML Input</label>
+            <textarea id="xmlInput" class="w-full h-64 p-3 rounded bg-slate-800 border border-slate-600 text-white"
+                placeholder="Paste your AI2 XML here..."></textarea>
+        </div>
+
+        <!-- Button -->
+        <div class="mb-4">
+            <button onclick="App.compile()" class="bg-sky-500 hover:bg-sky-600 px-6 py-2 rounded font-semibold">
+                Convert to Java →
+            </button>
+        </div>
+
+        <!-- Output -->
+        <div>
+            <label class="block mb-2 text-sm text-slate-300">Java Output</label>
+            <textarea id="javaOutput" class="w-full h-64 p-3 rounded bg-slate-800 border border-slate-600 text-white"
+                placeholder="Output will appear here..."></textarea>
+        </div>
+
+    </div>
+
+    <!-- App script -->
+    <script type="module" src="./app.js"></script>
+
+</body>
+
+</html>

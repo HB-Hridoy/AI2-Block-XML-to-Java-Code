@@ -1,0 +1,166 @@
+<xml xmlns="http://www.w3.org/1999/xhtml">
+  <block type="procedures_defnoreturn">
+    <mutation>
+      <arg name="layout"></arg>
+      <arg name="cutValues"></arg>
+      <arg name="height"></arg>
+      <arg name="width"></arg>
+    </mutation>
+    <field name="NAME">CornerCutLayout</field>
+    <field name="VAR0">layout</field>
+    <field name="VAR1">cutValues</field>
+    <field name="VAR2">height</field>
+    <field name="VAR3">width</field>
+    <statement name="STACK">
+      <block type="local_declaration_statement">
+        <mutation>
+          <localname name="id"></localname>
+          <localname name="cutList"></localname>
+        </mutation>
+        <field name="VAR0">id</field>
+        <field name="VAR1">cutList</field>
+        <value name="DECL0">
+          <block type="lexical_variable_get">
+            <field name="VAR">layout</field>
+          </block>
+        </value>
+        <value name="DECL1">
+          <block type="lists_from_csv_row">
+            <value name="TEXT">
+              <block type="lexical_variable_get">
+                <field name="VAR">cutValues</field>
+              </block>
+            </value>
+          </block>
+        </value>
+        <statement name="STACK">
+          <block type="component_method">
+            <mutation component_type="ShapeableView" method_name="Create" is_generic="false"
+              instance_name="ShapeableView1"></mutation>
+            <field name="COMPONENT_SELECTOR">ShapeableView1</field>
+            <value name="ARG0">
+              <block type="lexical_variable_get">
+                <field name="VAR">id</field>
+              </block>
+            </value>
+            <value name="ARG1">
+              <block type="lexical_variable_get">
+                <field name="VAR">layout</field>
+              </block>
+            </value>
+            <value name="ARG2">
+              <block type="component_set_get">
+                <mutation component_type="ShapeableView" set_or_get="get" property_name="CutCorner"
+                  is_generic="false" instance_name="ShapeableView1"></mutation>
+                <field name="COMPONENT_SELECTOR">ShapeableView1</field>
+                <field name="PROP">CutCorner</field>
+              </block>
+            </value>
+            <next>
+              <block type="component_method">
+                <mutation component_type="ShapeableView" method_name="SetCornerCutSize"
+                  is_generic="false" instance_name="ShapeableView1"></mutation>
+                <field name="COMPONENT_SELECTOR">ShapeableView1</field>
+                <value name="ARG0">
+                  <block type="lexical_variable_get">
+                    <field name="VAR">id</field>
+                  </block>
+                </value>
+                <value name="ARG1">
+                  <block type="lists_select_item">
+                    <value name="LIST">
+                      <block type="lexical_variable_get">
+                        <field name="VAR">cutList</field>
+                      </block>
+                    </value>
+                    <value name="NUM">
+                      <block type="math_number">
+                        <field name="NUM">1</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="ARG2">
+                  <block type="lists_select_item">
+                    <value name="LIST">
+                      <block type="lexical_variable_get">
+                        <field name="VAR">cutList</field>
+                      </block>
+                    </value>
+                    <value name="NUM">
+                      <block type="math_number">
+                        <field name="NUM">2</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="ARG3">
+                  <block type="lists_select_item">
+                    <value name="LIST">
+                      <block type="lexical_variable_get">
+                        <field name="VAR">cutList</field>
+                      </block>
+                    </value>
+                    <value name="NUM">
+                      <block type="math_number">
+                        <field name="NUM">3</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <value name="ARG4">
+                  <block type="lists_select_item">
+                    <value name="LIST">
+                      <block type="lexical_variable_get">
+                        <field name="VAR">cutList</field>
+                      </block>
+                    </value>
+                    <value name="NUM">
+                      <block type="math_number">
+                        <field name="NUM">4</field>
+                      </block>
+                    </value>
+                  </block>
+                </value>
+                <next>
+                  <block type="component_method">
+                    <mutation component_type="ShapeableView" method_name="SetHeight"
+                      is_generic="false" instance_name="ShapeableView1"></mutation>
+                    <field name="COMPONENT_SELECTOR">ShapeableView1</field>
+                    <value name="ARG0">
+                      <block type="lexical_variable_get">
+                        <field name="VAR">id</field>
+                      </block>
+                    </value>
+                    <value name="ARG1">
+                      <block type="lexical_variable_get">
+                        <field name="VAR">height</field>
+                      </block>
+                    </value>
+                    <next>
+                      <block type="component_method">
+                        <mutation component_type="ShapeableView" method_name="SetWidth"
+                          is_generic="false" instance_name="ShapeableView1"></mutation>
+                        <field name="COMPONENT_SELECTOR">ShapeableView1</field>
+                        <value name="ARG0">
+                          <block type="lexical_variable_get">
+                            <field name="VAR">id</field>
+                          </block>
+                        </value>
+                        <value name="ARG1">
+                          <block type="lexical_variable_get">
+                            <field name="VAR">width</field>
+                          </block>
+                        </value>
+                      </block>
+                    </next>
+                  </block>
+                </next>
+              </block>
+            </next>
+          </block>
+        </statement>
+      </block>
+    </statement>
+  </block>
+</xml>
